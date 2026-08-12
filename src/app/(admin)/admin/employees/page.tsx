@@ -12,6 +12,7 @@ import {
   Key,
   KeyRound,
   Copy,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -57,6 +59,8 @@ interface Employee {
   role: string;
   team_id: number;
   status: string;
+  is_deleted: boolean;
+  deleted_at: string | null;
   created_at: string;
   teams: { team_name: string } | null;
 }
@@ -66,6 +70,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   active: { label: '已启用', variant: 'default' },
   rejected: { label: '已拒绝', variant: 'destructive' },
   disabled: { label: '已禁用', variant: 'outline' },
+  deleted: { label: '已删除', variant: 'destructive' },
 };
 
 export default function AdminEmployeesPage() {
@@ -90,6 +95,11 @@ export default function AdminEmployeesPage() {
   const [resetError, setResetError] = useState('');
   const [resetResult, setResetResult] = useState<{ name: string; username: string; temp_password: string } | null>(null);
   const [resetSuccessOpen, setResetSuccessOpen] = useState(false);
+
+  // 删除员工对话框
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -456,10 +466,52 @@ export default function AdminEmployeesPage() {
               {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Unlock className="h-3 w-3" />}
               <span className="ml-1">启用</span>
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setDeleteTarget(employee); setDeleteDialogOpen(true); }}
+              className="h-7 text-xs text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-3 w-3" />
+              <span className="ml-1">删除</span>
+            </Button>
+          </div>
+        );
+      case 'deleted':
+        return (
+          <div className="flex items-center gap-1">
+            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
+              <Trash2 className="mr-1 h-3 w-3" />
+              已删除
+            </span>
           </div>
         );
       default:
         return <span className="text-xs text-muted-foreground">--</span>;
+    }
+  };
+
+  // 删除员工（软删除）
+  const handleDeleteEmployee = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${deleteTarget.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`${deleteTarget.name} 的账号已被删除，历史数据保留`);
+        fetchEmployees();
+      } else {
+        toast.error(data.error || '删除失败');
+      }
+    } catch {
+      toast.error('网络错误');
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -511,14 +563,17 @@ export default function AdminEmployeesPage() {
                 </TableHeader>
                 <TableBody>
                   {employees.map((employee) => {
-                    const statusConfig = STATUS_CONFIG[employee.status] || {
-                      label: employee.status,
-                      variant: 'outline' as const,
-                    };
+                    const isDeleted = employee.is_deleted;
+                    const statusConfig = isDeleted
+                      ? { label: '已删除', variant: 'destructive' as const }
+                      : (STATUS_CONFIG[employee.status] || {
+                          label: employee.status,
+                          variant: 'outline' as const,
+                        });
                     return (
-                      <TableRow key={employee.id}>
+                      <TableRow key={employee.id} className={isDeleted ? 'opacity-50' : ''}>
                         <TableCell className="font-medium">
-                          {employee.name}
+                          {employee.name}{isDeleted && ' (已删除)'}
                         </TableCell>
                         <TableCell>{employee.username}</TableCell>
                         <TableCell className="hidden md:table-cell">
@@ -590,6 +645,38 @@ export default function AdminEmployeesPage() {
             <Button onClick={handleTeamChangeConfirm} disabled={teamChangeLoading}>
               {teamChangeLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               确认
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除员工确认对话框 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              删除员工
+            </DialogTitle>
+            <DialogDescription>
+              确定要删除员工 {deleteTarget?.name}（{deleteTarget?.username}）吗？删除后该员工将无法登录，但历史业务数据仍会保留。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteLoading}
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteEmployee}
+              disabled={deleteLoading}
+            >
+              {deleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>

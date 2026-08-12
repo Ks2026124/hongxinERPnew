@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 检查账号是否已被删除
+    if ((profile as any).is_deleted) {
+      return NextResponse.json(
+        { error: '该账号已被删除，无法登录' },
+        { status: 403 }
+      );
+    }
+
     // Verify password
     const isValid = await verifyPassword(password, profile.password_hash);
     if (!isValid) {

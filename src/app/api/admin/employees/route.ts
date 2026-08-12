@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: employees, error } = await client
       .from('profiles')
-      .select('id, username, name, phone, role, team_id, status, created_at, teams(team_name)')
+      .select('id, username, name, phone, role, team_id, status, is_deleted, deleted_at, created_at, teams(team_name)')
       .eq('role', 'employee')
       .order('created_at', { ascending: false });
 

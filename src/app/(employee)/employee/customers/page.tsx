@@ -30,7 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Users, Phone } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Phone, Eye } from 'lucide-react';
+import { CustomerDetailDialog } from '@/components/customer/customer-detail-dialog';
 
 interface Customer {
   id: number;
@@ -56,6 +57,7 @@ export default function EmployeeCustomersPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -262,6 +264,16 @@ export default function EmployeeCustomersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          setSelectedCustomer(customer);
+                          setShowDetailDialog(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => openEditDialog(customer)}
                       >
                         <Edit className="w-4 h-4" />
@@ -407,6 +419,13 @@ export default function EmployeeCustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 客户详情对话框（含微信截图） */}
+      <CustomerDetailDialog
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        customer={selectedCustomer}
+      />
     </div>
   );
 }

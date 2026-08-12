@@ -38,7 +38,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Search, X, Users } from 'lucide-react';
+import { Edit, Trash2, Search, X, Users, Image as ImageIcon } from 'lucide-react';
+import { AdminImageGallery } from '@/components/customer/admin-image-gallery';
 
 interface Team {
   id: number;
@@ -87,6 +88,7 @@ export default function AdminCustomersPage() {
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [showImageGallery, setShowImageGallery] = useState(false);
 
   useEffect(() => {
     fetchTeams();
@@ -244,9 +246,15 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">客户管理</h1>
-        <p className="text-muted-foreground mt-1">查看和管理所有客户信息</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">客户管理</h1>
+          <p className="text-muted-foreground mt-1">查看和管理所有客户信息</p>
+        </div>
+        <Button variant="outline" onClick={() => setShowImageGallery(true)}>
+          <ImageIcon className="w-4 h-4 mr-2" />
+          微信截图
+        </Button>
       </div>
 
       {message && (
@@ -460,6 +468,12 @@ export default function AdminCustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 微信截图画廊 */}
+      <AdminImageGallery
+        open={showImageGallery}
+        onOpenChange={setShowImageGallery}
+      />
     </div>
   );
 }

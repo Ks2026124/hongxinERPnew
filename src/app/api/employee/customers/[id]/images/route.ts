@@ -143,7 +143,7 @@ export async function POST(
     }
 
     // 上传到对象存储
-    const storage = getStorage();
+    const storage = await getStorage();
     const ext = getFileExtension(file.name);
     const fileName = `customer-images/${customerId}/${Date.now()}.${ext}`;
     
@@ -152,6 +152,13 @@ export async function POST(
       fileName,
       contentType: file.type,
     });
+
+    // 验证文件确实存在
+    const exists = await storage.fileExists({ fileKey: key });
+    if (!exists) {
+      console.error('S3 文件上传后验证失败:', key);
+      return NextResponse.json({ error: '图片上传失败，请重试' }, { status: 500 });
+    }
 
     // 生成签名 URL
     const imageUrl = await storage.generatePresignedUrl({

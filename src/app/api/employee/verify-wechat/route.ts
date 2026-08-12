@@ -135,16 +135,24 @@ export async function POST(request: NextRequest) {
     // 验证通过：上传图片到 S3
     const storage = await getStorage();
     const ext = file.name.split('.').pop() || 'jpg';
-    const key = `wechat-verify/${user.userId}/${Date.now()}.${ext}`;
+    const fileName = `wechat-verify/${user.userId}/${Date.now()}.${ext}`;
 
-    await storage.uploadFile({
+    // 上传文件并获取实际返回的 key
+    const actualKey = await storage.uploadFile({
       fileContent: buffer,
-      fileName: key,
+      fileName,
       contentType: file.type,
     });
 
+    // 验证文件确实存在
+    const exists = await storage.fileExists({ fileKey: actualKey });
+    if (!exists) {
+      console.error('S3 文件上传后验证失败:', actualKey);
+      return NextResponse.json({ error: '图片上传失败，请重试' }, { status: 500 });
+    }
+
     const imageUrl = await storage.generatePresignedUrl({
-      key,
+      key: actualKey,
       expireTime: 3600,
     });
 
@@ -154,7 +162,7 @@ export async function POST(request: NextRequest) {
       .insert({
         employee_id: user.userId,
         team_id: user.teamId,
-        image_url: key,
+        image_url: actualKey,
         sha256,
         phash,
         status: 'verified',

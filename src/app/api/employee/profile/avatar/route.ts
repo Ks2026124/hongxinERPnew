@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 上传到对象存储
-    const storage = getStorage();
+    const storage = await getStorage();
     const ext = getFileExtension(file.name);
     const fileKey = `avatars/${user.userId}/${Date.now()}.${ext}`;
 
@@ -55,6 +55,13 @@ export async function POST(request: NextRequest) {
       fileName: fileKey,
       contentType: file.type,
     });
+
+    // 验证文件确实存在
+    const exists = await storage.fileExists({ fileKey: uploadedKey });
+    if (!exists) {
+      console.error('S3 文件上传后验证失败:', uploadedKey);
+      return NextResponse.json({ error: '头像上传失败，请重试' }, { status: 500 });
+    }
 
     // 获取预签名 URL（用于显示）
     const presignedUrl = await storage.generatePresignedUrl({

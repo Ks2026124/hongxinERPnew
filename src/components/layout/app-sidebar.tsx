@@ -1,0 +1,94 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Users,
+  UserCog,
+  Contact,
+  ChevronLeft,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
+interface AppSidebarProps {
+  title: string;
+  items: {
+    label: string;
+    href: string;
+    icon: React.ElementType;
+  }[];
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProps) {
+  const pathname = usePathname();
+
+  return (
+    <aside
+      className={cn(
+        'fixed left-0 top-0 z-40 h-screen border-r border-border bg-sidebar transition-all duration-300',
+        collapsed ? 'w-16' : 'w-60'
+      )}
+    >
+      <div className="flex h-14 items-center justify-between px-4">
+        {!collapsed && (
+          <h1 className="text-base font-semibold text-sidebar-foreground truncate">
+            {title}
+          </h1>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="h-8 w-8 shrink-0"
+        >
+          <ChevronLeft
+            className={cn(
+              'h-4 w-4 transition-transform',
+              collapsed && 'rotate-180'
+            )}
+          />
+        </Button>
+      </div>
+      <Separator />
+      <nav className="flex flex-col gap-1 p-2">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors',
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                  : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
+
+export const adminNavItems = [
+  { label: '工作台', href: '/admin', icon: LayoutDashboard },
+  { label: '团队管理', href: '/admin/teams', icon: Users },
+  { label: '员工管理', href: '/admin/employees', icon: UserCog },
+  { label: '客户管理', href: '/admin/customers', icon: Contact },
+];
+
+export const employeeNavItems = [
+  { label: '工作台', href: '/employee', icon: LayoutDashboard },
+  { label: '我的客户', href: '/employee/customers', icon: Contact },
+  { label: '个人中心', href: '/employee/profile', icon: UserCog },
+];

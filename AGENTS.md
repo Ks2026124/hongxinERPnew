@@ -1,6 +1,13 @@
-# 项目上下文
+# 鸿信ERP - 项目上下文
 
-### 版本技术栈
+## 项目概览
+
+- **项目名称**：鸿信ERP
+- **定位**：公司内部员工客户管理系统
+- **核心功能**：员工添加客户、录入客户资料、上传微信聊天截图、图片查重、管理员管理员工和团队
+- **用户角色**：管理员（admin）、员工（employee）
+
+## 版本技术栈
 
 - **Framework**: Next.js 16 (App Router)
 - **Core**: React 19
@@ -11,55 +18,95 @@
 ## 目录结构
 
 ```
-├── public/                 # 静态资源
-├── scripts/                # 构建与启动脚本
-│   ├── build.sh            # 构建脚本
-│   ├── dev.sh              # 开发环境启动脚本
-│   ├── prepare.sh          # 预处理脚本
-│   └── start.sh            # 生产环境启动脚本
+├── public/                     # 静态资源
+├── scripts/                    # 构建与启动脚本
 ├── src/
-│   ├── app/                # 页面路由与布局
-│   ├── components/ui/      # Shadcn UI 组件库
-│   ├── hooks/              # 自定义 Hooks
-│   ├── lib/                # 工具库
-│   │   └── utils.ts        # 通用工具函数 (cn)
-│   └── server.ts           # 自定义服务端入口
-├── next.config.ts          # Next.js 配置
-├── package.json            # 项目依赖管理
-└── tsconfig.json           # TypeScript 配置
+│   ├── app/
+│   │   ├── (auth)/             # 认证页面路由组（无侧边栏）
+│   │   │   ├── login/          # 登录页 /login
+│   │   │   └── register/       # 注册页 /register
+│   │   ├── (admin)/            # 管理员路由组（含侧边栏）
+│   │   │   └── admin/
+│   │   │       ├── page.tsx            # 管理员工作台 /admin
+│   │   │       ├── teams/page.tsx      # 团队管理 /admin/teams
+│   │   │       ├── employees/page.tsx  # 员工管理 /admin/employees
+│   │   │       └── customers/page.tsx  # 客户管理 /admin/customers
+│   │   ├── (employee)/         # 员工路由组（含侧边栏）
+│   │   │   └── employee/
+│   │   │       ├── page.tsx            # 员工工作台 /employee
+│   │   │       ├── customers/page.tsx  # 我的客户 /employee/customers
+│   │   │       └── profile/page.tsx    # 个人中心 /employee/profile
+│   │   ├── layout.tsx          # 根布局
+│   │   ├── page.tsx            # 首页（重定向到 /login）
+│   │   └── globals.css         # 全局样式（Shadcn 主题变量）
+│   ├── components/
+│   │   ├── ui/                 # Shadcn UI 组件库
+│   │   └── layout/             # 布局组件
+│   │       ├── app-sidebar.tsx       # 侧边栏导航
+│   │       ├── app-header.tsx        # 顶部栏
+│   │       ├── stat-card.tsx         # 统计卡片
+│   │       └── page-placeholder.tsx  # 页面占位符
+│   ├── hooks/                  # 自定义 Hooks
+│   ├── lib/                    # 工具库
+│   │   └── utils.ts            # 通用工具函数 (cn)
+│   └── server.ts               # 自定义服务端入口
+├── DESIGN.md                   # 设计规范文件
+├── next.config.ts              # Next.js 配置
+├── package.json                # 项目依赖管理
+└── tsconfig.json               # TypeScript 配置
 ```
 
-- 项目文件（如 app 目录、pages 目录、components 等）默认初始化到 `src/` 目录下。
+## 页面路由
+
+| 路由 | 角色 | 说明 |
+|------|------|------|
+| `/login` | 通用 | 登录页 |
+| `/register` | 通用 | 注册页 |
+| `/admin` | 管理员 | 管理员工作台 |
+| `/admin/teams` | 管理员 | 团队管理 |
+| `/admin/employees` | 管理员 | 员工管理 |
+| `/admin/customers` | 管理员 | 客户管理（全部） |
+| `/employee` | 员工 | 员工工作台 |
+| `/employee/customers` | 员工 | 我的客户 |
+| `/employee/profile` | 员工 | 个人中心 |
+
+## 布局结构
+
+- **(auth) 路由组**：居中卡片布局，无侧边栏
+- **(admin) 路由组**：左侧侧边栏 + 顶部栏 + 内容区
+- **(employee) 路由组**：左侧侧边栏 + 顶部栏 + 内容区
+- 侧边栏支持折叠/展开，桌面端默认展开
 
 ## 包管理规范
 
 **仅允许使用 pnpm** 作为包管理器，**严禁使用 npm 或 yarn**。
-**常用命令**：
-- 安装依赖：`pnpm add <package>`
-- 安装开发依赖：`pnpm add -D <package>`
-- 安装所有依赖：`pnpm install`
-- 移除依赖：`pnpm remove <package>`
 
 ## 开发规范
 
 ### 编码规范
 
-- 默认按 TypeScript `strict` 心智写代码；优先复用当前作用域已声明的变量、函数、类型和导入，禁止引用未声明标识符或拼错变量名。
-- 禁止隐式 `any` 和 `as any`；函数参数、返回值、解构项、事件对象、`catch` 错误在使用前应有明确类型或先完成类型收窄，并清理未使用的变量和导入。
-
-### next.config 配置规范
-
-- 配置的路径不要写死绝对路径，必须使用 path.resolve(__dirname, ...)、import.meta.dirname 或 process.cwd() 动态拼接。
+- 默认按 TypeScript `strict` 心智写代码
+- 禁止隐式 `any` 和 `as any`
+- 函数参数必须有类型标注
 
 ### Hydration 问题防范
 
-1. 严禁在 JSX 渲染逻辑中直接使用 typeof window、Date.now()、Math.random() 等动态数据。**必须使用 'use client' 并配合 useEffect + useState 确保动态内容仅在客户端挂载后渲染**；同时严禁非法 HTML 嵌套（如 <p> 嵌套 <div>）。
-2. **禁止使用 head 标签**，优先使用 metadata，详见文档：https://nextjs.org/docs/app/api-reference/functions/generate-metadata
-   1. 三方 CSS、字体等资源可在 `globals.css` 中顶部通过 `@import` 引入或使用 next/font
-   2. preload, preconnect, dns-prefetch 通过 ReactDOM 的 preload、preconnect、dns-prefetch 方法引入
-   3. json-ld 可阅读 https://nextjs.org/docs/app/guides/json-ld
+1. 严禁在 JSX 中直接使用 `typeof window`、`Date.now()`、`Math.random()` 等动态数据
+2. **必须使用 `'use client'` 并配合 `useEffect + useState`**
+3. **禁止使用 head 标签**，优先使用 metadata
 
-## UI 设计与组件规范 (UI & Styling Standards)
+### UI 规范
 
-- 模板默认预装核心组件库 `shadcn/ui`，位于`src/components/ui/`目录下
-- Next.js 项目**必须默认**采用 shadcn/ui 组件、风格和规范，**除非用户指定用其他的组件和规范。**
+- 使用 shadcn/ui 组件库
+- 颜色必须使用 CSS 变量（`bg-background`、`text-foreground` 等）
+- 禁止硬编码颜色值
+- 禁止蓝紫色 AI 风格渐变
+- 详见 `DESIGN.md`
+
+## 构建命令
+
+- 开发：`pnpm dev`
+- 构建：`pnpm build`
+- 启动：`pnpm start`
+- 类型检查：`pnpm ts-check`
+- 代码检查：`pnpm lint`

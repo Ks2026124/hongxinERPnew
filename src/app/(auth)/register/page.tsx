@@ -38,16 +38,23 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const [teamError, setTeamError] = useState('');
+
   useEffect(() => {
     async function fetchTeams() {
       try {
         const res = await fetch('/api/teams');
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && data.data) {
           setTeams(data.data);
+          if (data.data.length === 0) {
+            setTeamError('暂无可用团队，请联系管理员创建团队');
+          }
+        } else {
+          setTeamError(data.error || '加载团队列表失败');
         }
       } catch {
-        // silently fail - teams will be empty
+        setTeamError('网络错误，无法加载团队列表');
       } finally {
         setLoadingTeams(false);
       }
@@ -156,6 +163,9 @@ export default function RegisterPage() {
                 ))}
               </SelectContent>
             </Select>
+            {teamError && (
+              <p className="text-sm text-destructive">{teamError}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="name">姓名</Label>

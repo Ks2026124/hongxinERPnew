@@ -100,8 +100,9 @@ export default function AdminCustomersPage() {
     try {
       const res = await fetch('/api/admin/teams');
       const data = await res.json();
-      if (data.success) {
-        setTeams(data.data);
+      const teamList = data.data || data;
+      if (Array.isArray(teamList)) {
+        setTeams(teamList);
       }
     } catch (err) {
       console.error('获取团队列表失败:', err);
@@ -112,8 +113,9 @@ export default function AdminCustomersPage() {
     try {
       const res = await fetch('/api/admin/employees');
       const data = await res.json();
-      if (data.success) {
-        setEmployees(data.data);
+      const empList = data.data || data;
+      if (Array.isArray(empList)) {
+        setEmployees(empList);
       }
     } catch (err) {
       console.error('获取员工列表失败:', err);

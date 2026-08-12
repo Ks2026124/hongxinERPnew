@@ -35,10 +35,17 @@ export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProp
       )}
     >
       <div className="flex h-14 items-center justify-between px-4">
-        {!collapsed && (
-          <h1 className="text-base font-semibold text-sidebar-foreground truncate">
-            {title}
-          </h1>
+        {!collapsed ? (
+          <Link href={title.includes('管理员') ? '/admin' : '/employee'} className="flex items-center gap-2">
+            <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg" />
+            <h1 className="text-base font-semibold text-sidebar-foreground truncate">
+              {title}
+            </h1>
+          </Link>
+        ) : (
+          <Link href={title.includes('管理员') ? '/admin' : '/employee'} className="flex items-center justify-center w-full">
+            <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg" />
+          </Link>
         )}
         <Button
           variant="ghost"

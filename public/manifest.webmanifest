@@ -1,25 +1,33 @@
 {
-  "name": "鸿信ERP - 员工客户管理系统",
+  "name": "鸿信ERP",
   "short_name": "鸿信ERP",
-  "description": "公司内部员工客户管理系统，用于客户资料管理、团队管理和员工管理。",
-  "start_url": "/login",
+  "description": "员工客户管理系统",
+  "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#C4956A",
-  "background_color": "#F5F0EB",
-  "lang": "zh-CN",
+  "background_color": "#1a2332",
+  "theme_color": "#1a2332",
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

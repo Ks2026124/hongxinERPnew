@@ -133,6 +133,9 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardHeader className="text-center">
+        <div className="flex justify-center mb-2">
+          <img src="/icon-192x192.png" alt="鸿信ERP" className="h-16 w-16 rounded-xl" />
+        </div>
         <h2 className="text-lg font-semibold text-foreground">注册</h2>
         <p className="text-sm text-muted-foreground">
           创建您的员工账号

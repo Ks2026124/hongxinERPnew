@@ -48,6 +48,9 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader className="text-center">
+        <div className="flex justify-center mb-2">
+          <img src="/icon-192x192.png" alt="鸿信ERP" className="h-16 w-16 rounded-xl" />
+        </div>
         <h2 className="text-lg font-semibold text-foreground">登录</h2>
         <p className="text-sm text-muted-foreground">
           请输入您的账号和密码

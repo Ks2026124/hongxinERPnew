@@ -9,7 +9,11 @@ import {
   Loader2,
   AlertCircle,
   Users,
+  Key,
+  KeyRound,
+  Copy,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -78,6 +82,14 @@ export default function AdminEmployeesPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [teamChangeLoading, setTeamChangeLoading] = useState(false);
   const [teamChangeError, setTeamChangeError] = useState('');
+
+  // 重置密码对话框
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [employeeToReset, setEmployeeToReset] = useState<Employee | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetResult, setResetResult] = useState<{ name: string; username: string; temp_password: string } | null>(null);
+  const [resetSuccessOpen, setResetSuccessOpen] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -215,6 +227,41 @@ export default function AdminEmployeesPage() {
     }
   };
 
+  const handleResetPassword = (emp: Employee) => {
+    setEmployeeToReset(emp);
+    setResetDialogOpen(true);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!employeeToReset) return;
+    setResetLoading(true);
+    setResetError('');
+
+    try {
+      const res = await fetch(`/api/admin/employees/${employeeToReset.id}/reset-password`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setResetError(data.error || '重置失败');
+        return;
+      }
+
+      setResetResult({
+        name: data.data.name,
+        username: data.data.username,
+        temp_password: data.data.temp_password,
+      });
+      setResetDialogOpen(false);
+      setResetSuccessOpen(true);
+    } catch {
+      setResetError('网络错误');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString('zh-CN', {
@@ -253,11 +300,101 @@ export default function AdminEmployeesPage() {
               {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
               <span className="ml-1">拒绝</span>
             </Button>
-          </div>
+            {/* 重置密码对话框 */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {resetResult ? "密码重置成功" : "重置员工密码"}
+            </DialogTitle>
+          </DialogHeader>
+          {resetResult ? (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 p-3 rounded-md bg-primary/10 text-primary text-sm">
+                <KeyRound className="h-4 w-4" />
+                密码重置成功
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">员工姓名：</span>
+                  <span className="font-medium">{resetResult.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">用户名：</span>
+                  <span className="font-medium">{resetResult.username}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">临时密码：</span>
+                  <div className="flex items-center gap-2">
+                    <code className="px-2 py-1 bg-muted rounded font-mono text-sm font-bold">{resetResult.temp_password}</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(resetResult.temp_password);
+                        toast("密码已复制到剪贴板");
+                      }}
+                    >
+                      复制
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                请将临时密码告知员工，员工首次登录后将被要求修改密码。
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              <p className="text-sm">
+                确定要重置该员工的登录密码吗？
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">员工姓名：</span>
+                  <span className="font-medium">{employeeToReset?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">用户名：</span>
+                  <span className="font-medium">{employeeToReset?.username}</span>
+                </div>
+              </div>
+              {resetError && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {resetError}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            {resetResult ? (
+              <Button onClick={() => { setResetDialogOpen(false); setResetResult(null); }}>
+                关闭
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setResetDialogOpen(false)}
+                  disabled={resetLoading}
+                >
+                  取消
+                </Button>
+                <Button onClick={confirmResetPassword} disabled={resetLoading}>
+                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  确认重置
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
         );
       case 'active':
         return (
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <Button
               size="sm"
               variant="outline"
@@ -266,6 +403,15 @@ export default function AdminEmployeesPage() {
             >
               <Users className="h-3 w-3" />
               <span className="ml-1">调组</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setEmployeeToReset(employee); setResetError(''); setResetResult(null); setResetDialogOpen(true); }}
+              className="h-7 text-xs"
+            >
+              <KeyRound className="h-3 w-3" />
+              <span className="ml-1">重置密码</span>
             </Button>
             <Button
               size="sm"
@@ -281,7 +427,7 @@ export default function AdminEmployeesPage() {
         );
       case 'disabled':
         return (
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <Button
               size="sm"
               variant="outline"
@@ -290,6 +436,15 @@ export default function AdminEmployeesPage() {
             >
               <Users className="h-3 w-3" />
               <span className="ml-1">调组</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleResetPassword(employee)}
+              className="h-7 text-xs"
+            >
+              <KeyRound className="h-3 w-3" />
+              <span className="ml-1">重置密码</span>
             </Button>
             <Button
               size="sm"

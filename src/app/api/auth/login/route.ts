@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Find user by username
     const { data: profile, error } = await client
       .from('profiles')
-      .select('id, username, password_hash, name, role, team_id, status')
+      .select('id, username, password_hash, name, role, team_id, status, must_change_password')
       .eq('username', username)
       .maybeSingle();
 
@@ -69,16 +69,24 @@ export async function POST(request: NextRequest) {
       teamId: profile.team_id,
       name: profile.name,
       status: profile.status,
+      mustChangePassword: profile.must_change_password || false,
     });
 
     await setSessionCookie(token);
+
+    // Determine redirect path
+    let redirect = profile.role === 'admin' ? '/admin' : '/employee';
+    if (profile.role === 'employee' && profile.must_change_password) {
+      redirect = '/employee/change-password';
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         role: profile.role,
         name: profile.name,
-        redirect: profile.role === 'admin' ? '/admin' : '/employee',
+        must_change_password: profile.must_change_password || false,
+        redirect,
       },
     });
   } catch (err) {

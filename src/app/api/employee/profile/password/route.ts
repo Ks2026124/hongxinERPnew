@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, hashPassword, verifyPassword, validatePassword } from '@/lib/auth';
+import { getCurrentUser, hashPassword, verifyPassword, validatePassword, createSession, setSessionCookie } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 // POST /api/employee/profile/password - 修改密码
@@ -68,17 +68,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 哈希新密码并更新
+    // 哈希新密码并更新，同时清除强制修改密码标记
     const newHash = await hashPassword(new_password);
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ password_hash: newHash, updated_at: new Date().toISOString() })
+      .update({ password_hash: newHash, must_change_password: false, updated_at: new Date().toISOString() })
       .eq('id', user.userId);
 
     if (updateError) {
       console.error('更新密码失败:', updateError);
       return NextResponse.json({ error: '修改密码失败' }, { status: 500 });
     }
+
+    // 更新 session 中的 mustChangePassword 标记
+    const newSession = await createSession({
+      userId: user.userId,
+      username: user.username,
+      role: user.role,
+      teamId: user.teamId ?? null,
+      name: user.name,
+      status: user.status,
+      mustChangePassword: false,
+    });
+    setSessionCookie(newSession);
 
     return NextResponse.json({
       success: true,

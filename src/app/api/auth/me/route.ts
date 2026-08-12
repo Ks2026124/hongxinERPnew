@@ -17,6 +17,7 @@ export async function GET() {
         teamId: session.teamId,
         name: session.name,
         status: session.status,
+        must_change_password: session.mustChangePassword || false,
       },
     });
   } catch (err) {

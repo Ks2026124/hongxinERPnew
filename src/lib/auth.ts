@@ -35,6 +35,7 @@ export interface SessionPayload {
   teamId: number | null;
   name: string;
   status: string;
+  mustChangePassword?: boolean;
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {

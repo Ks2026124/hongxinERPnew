@@ -13,6 +13,7 @@ interface SessionPayload {
   teamId: number | null;
   name: string;
   status: string;
+  mustChangePassword?: boolean;
 }
 
 async function getSession(request: NextRequest): Promise<SessionPayload | null> {
@@ -44,6 +45,13 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && session) {
     const redirect = session.role === 'admin' ? '/admin' : '/employee';
     return NextResponse.redirect(new URL(redirect, request.url));
+  }
+
+  // If employee needs to change password, redirect to change-password page
+  if (session && session.role === 'employee' && session.mustChangePassword) {
+    if (!pathname.startsWith('/employee/change-password') && !pathname.startsWith('/api/')) {
+      return NextResponse.redirect(new URL('/employee/change-password', request.url));
+    }
   }
 
   // If employee tries to access admin routes → redirect to employee

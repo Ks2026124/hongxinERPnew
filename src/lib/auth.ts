@@ -103,3 +103,19 @@ export function validatePassword(password: string): { valid: boolean; message?: 
   }
   return { valid: true };
 }
+
+// ============================================================
+// Auth Helpers
+// ============================================================
+
+export async function getCurrentUser(): Promise<SessionPayload | null> {
+  return getSessionFromCookie();
+}
+
+export async function requireAdmin(): Promise<SessionPayload | null> {
+  const session = await getSessionFromCookie();
+  if (!session || session.role !== 'admin') {
+    return null;
+  }
+  return session;
+}

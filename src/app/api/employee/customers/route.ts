@@ -43,8 +43,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '无权限' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { customer_name, phone, wechat_id, remark } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: '请求数据格式错误' }, { status: 400 });
+    }
+    const { customer_name, phone, wechat_id, remark } = body as {
+      customer_name?: string;
+      phone?: string;
+      wechat_id?: string;
+      remark?: string;
+    };
 
     if (!customer_name || !customer_name.trim()) {
       return NextResponse.json({ error: '客户姓名不能为空' }, { status: 400 });

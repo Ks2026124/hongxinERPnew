@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Users, Phone, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Phone, Eye, Upload, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
 import { CustomerDetailDialog } from '@/components/customer/customer-detail-dialog';
 
 interface Customer {
@@ -41,6 +41,9 @@ interface Customer {
   remark: string | null;
   created_at: string;
 }
+
+// 验证步骤状态
+type VerifyStep = 'upload' | 'verifying' | 'verified' | 'failed';
 
 export default function EmployeeCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -58,6 +61,14 @@ export default function EmployeeCustomersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+
+  // 微信截图验证状态
+  const [verifyStep, setVerifyStep] = useState<VerifyStep>('upload');
+  const [verifyFile, setVerifyFile] = useState<File | null>(null);
+  const [verifyPreview, setVerifyPreview] = useState<string | null>(null);
+  const [verificationId, setVerificationId] = useState<number | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -82,18 +93,23 @@ export default function EmployeeCustomersPage() {
       setMessage('客户姓名不能为空');
       return;
     }
+    if (!verificationId) {
+      setMessage('请先完成微信截图验证');
+      return;
+    }
     setSubmitting(true);
     setMessage('');
     try {
       const res = await fetch('/api/employee/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, verification_id: verificationId }),
       });
       const data = await res.json();
       if (data.success) {
         setShowAddDialog(false);
         setFormData({ customer_name: '', phone: '', wechat_id: '', remark: '' });
+        resetVerification();
         fetchCustomers();
         setMessage('客户添加成功');
         setTimeout(() => setMessage(''), 3000);
@@ -105,6 +121,85 @@ export default function EmployeeCustomersPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // === 微信截图验证 ===
+  const resetVerification = () => {
+    setVerifyStep('upload');
+    setVerifyFile(null);
+    setVerifyPreview(null);
+    setVerificationId(null);
+    setVerifyMessage('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件类型
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setVerifyMessage('仅支持 JPG、PNG、WEBP 格式');
+      return;
+    }
+    // 检查文件大小 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setVerifyMessage('文件大小不能超过 10MB');
+      return;
+    }
+
+    setVerifyFile(file);
+    setVerifyMessage('');
+    // 预览
+    const reader = new FileReader();
+    reader.onload = (ev) => setVerifyPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    setVerifyStep('upload');
+  };
+
+  const handleVerify = async () => {
+    if (!verifyFile) {
+      setVerifyMessage('请先选择微信聊天截图');
+      return;
+    }
+    setVerifyStep('verifying');
+    setVerifyMessage('');
+
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', verifyFile);
+
+    try {
+      const res = await fetch('/api/employee/verify-wechat', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setVerifyStep('verified');
+        setVerificationId(data.data.verification_id);
+        setVerifyMessage('微信截图验证通过，可以继续填写客户信息。');
+      } else if (data.duplicate) {
+        setVerifyStep('failed');
+        const info = data.duplicateInfo || {};
+        if (data.duplicate === 'exact') {
+          setVerifyMessage(`该微信截图已存在（精确匹配），不能重复创建客户。上传者：${info.employee_name || '未知'}（${info.team_name || '未知'}）`);
+        } else {
+          setVerifyMessage(`该微信截图与已有图片高度相似，不能重复创建客户。上传者：${info.employee_name || '未知'}（${info.team_name || '未知'}）`);
+        }
+      } else {
+        setVerifyStep('failed');
+        setVerifyMessage(data.error || '验证失败');
+      }
+    } catch {
+      setVerifyStep('failed');
+      setVerifyMessage('网络错误，请重试');
+    }
+  };
+
+  const handleRetry = () => {
+    resetVerification();
   };
 
   const handleEdit = async () => {
@@ -295,55 +390,179 @@ export default function EmployeeCustomersPage() {
         </div>
       )}
 
-      {/* 新增客户对话框 */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+      {/* 新增客户对话框 - 两步流程 */}
+      <Dialog open={showAddDialog} onOpenChange={(open) => {
+        setShowAddDialog(open);
+        if (!open) resetVerification();
+      }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>新增客户</DialogTitle>
+            <DialogTitle>
+              {verifyStep === 'verified' ? '第二步：填写客户信息' : '第一步：微信截图验证'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>客户姓名 *</Label>
-              <Input
-                value={formData.customer_name}
-                onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                placeholder="请输入客户姓名"
-              />
+
+          {verifyStep !== 'verified' ? (
+            /* 步骤1：微信截图验证 */
+            <div className="space-y-4">
+              <div className="p-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                新增客户前必须先上传并验证微信聊天截图，验证通过后才能填写客户信息。
+              </div>
+
+              {verifyStep === 'upload' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>上传微信聊天截图</Label>
+                    <div
+                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {verifyPreview ? (
+                        <div className="space-y-2">
+                          <img src={verifyPreview} alt="预览" className="max-h-48 mx-auto rounded" />
+                          <p className="text-sm text-muted-foreground">{verifyFile?.name}</p>
+                          <Button variant="outline" size="sm" onClick={(e) => {
+                            e.stopPropagation();
+                            handleRetry();
+                          }}>
+                            重新选择
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Upload className="w-10 h-10 mx-auto text-muted-foreground/50" />
+                          <p className="text-sm text-muted-foreground">
+                            点击上传微信聊天截图
+                          </p>
+                          <p className="text-xs text-muted-foreground/70">
+                            支持 JPG、PNG、WEBP，最大 10MB
+                          </p>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handleFileSelect}
+                      />
+                    </div>
+                  </div>
+
+                  {verifyMessage && (
+                    <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                      {verifyMessage}
+                    </div>
+                  )}
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setShowAddDialog(false);
+                      resetVerification();
+                    }}>
+                      取消
+                    </Button>
+                    <Button onClick={handleVerify} disabled={!verifyFile}>
+                      开始验证
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+
+              {verifyStep === 'verifying' && (
+                <div className="py-8 text-center space-y-4">
+                  <Loader2 className="w-10 h-10 mx-auto animate-spin text-primary" />
+                  <div className="space-y-1">
+                    <p className="font-medium">正在验证微信截图...</p>
+                    <p className="text-sm text-muted-foreground">
+                      正在进行图片格式检查、SHA-256 精确查重和 pHash 相似检测
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {verifyStep === 'failed' && (
+                <div className="py-4 space-y-4">
+                  <div className="text-center space-y-2">
+                    <XCircle className="w-12 h-12 mx-auto text-destructive" />
+                    <p className="font-medium text-destructive">验证未通过</p>
+                    <p className="text-sm text-muted-foreground">{verifyMessage}</p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setShowAddDialog(false);
+                      resetVerification();
+                    }}>
+                      取消
+                    </Button>
+                    <Button onClick={handleRetry}>
+                      重新上传
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label>手机号</Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="请输入手机号"
-              />
+          ) : (
+            /* 步骤2：填写客户信息 */
+            <div className="space-y-4">
+              <div className="p-3 rounded-md bg-primary/10 text-primary text-sm flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                微信截图验证通过，可以填写客户信息。
+              </div>
+
+              <div className="space-y-2">
+                <Label>客户姓名 *</Label>
+                <Input
+                  value={formData.customer_name}
+                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                  placeholder="请输入客户姓名"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>手机号</Label>
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="请输入手机号"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>微信号</Label>
+                <Input
+                  value={formData.wechat_id}
+                  onChange={(e) => setFormData({ ...formData, wechat_id: e.target.value })}
+                  placeholder="请输入微信号"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>备注</Label>
+                <Textarea
+                  value={formData.remark}
+                  onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                  placeholder="请输入备注信息"
+                  rows={3}
+                />
+              </div>
+
+              {message && (
+                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                  {message}
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  resetVerification();
+                  setVerifyStep('upload');
+                }}>
+                  返回上一步
+                </Button>
+                <Button onClick={handleAdd} disabled={submitting}>
+                  {submitting ? '提交中...' : '确认添加'}
+                </Button>
+              </DialogFooter>
             </div>
-            <div className="space-y-2">
-              <Label>微信号</Label>
-              <Input
-                value={formData.wechat_id}
-                onChange={(e) => setFormData({ ...formData, wechat_id: e.target.value })}
-                placeholder="请输入微信号"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>备注</Label>
-              <Textarea
-                value={formData.remark}
-                onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                placeholder="请输入备注信息"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={handleAdd} disabled={submitting}>
-              {submitting ? '提交中...' : '确认添加'}
-            </Button>
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

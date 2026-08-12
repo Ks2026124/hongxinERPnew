@@ -116,6 +116,10 @@ export async function GET() {
 
     // 获取预签名 URL
     const storage = getStorage();
+    const exists = await storage.fileExists({ fileKey: profile.avatar_url });
+    if (!exists) {
+      return NextResponse.json({ success: true, data: { avatar_url: null } });
+    }
     const presignedUrl = await storage.generatePresignedUrl({
       key: profile.avatar_url,
       expireTime: 24 * 60 * 60, // 1 天有效期

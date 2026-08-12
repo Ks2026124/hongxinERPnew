@@ -43,13 +43,21 @@ export async function GET(request: NextRequest) {
     // 生成签名 URL
     const storage = getStorage();
     const imagesWithUrls = await Promise.all(
-      (data || []).map(async (img) => ({
-        ...img,
-        image_url: await storage.generatePresignedUrl({
-          key: img.image_url,
-          expireTime: 86400 * 365,
-        }),
-      }))
+      (data || []).map(async (img) => {
+        try {
+          const exists = await storage.fileExists({ fileKey: img.image_url });
+          if (!exists) {
+            return { ...img, image_url: '', _missing: true };
+          }
+          const signedUrl = await storage.generatePresignedUrl({
+            key: img.image_url,
+            expireTime: 86400 * 365,
+          });
+          return { ...img, image_url: signedUrl };
+        } catch {
+          return { ...img, image_url: '', _missing: true };
+        }
+      })
     );
 
     return NextResponse.json({ success: true, data: imagesWithUrls });

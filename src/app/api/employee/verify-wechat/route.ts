@@ -221,10 +221,18 @@ export async function GET() {
 
     // 获取图片预览 URL
     const storage = await getStorage();
-    const imageUrl = await storage.generatePresignedUrl({
-      key: verification.image_url,
-      expireTime: 3600,
-    });
+    let imageUrl = '';
+    try {
+      const exists = await storage.fileExists({ fileKey: verification.image_url });
+      if (exists) {
+        imageUrl = await storage.generatePresignedUrl({
+          key: verification.image_url,
+          expireTime: 3600,
+        });
+      }
+    } catch {
+      // 旧图片可能不在当前 Storage 中
+    }
 
     return NextResponse.json({
       success: true,

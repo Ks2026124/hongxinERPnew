@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Inspector } from 'react-dev-inspector';
 import { Toaster } from '@/components/ui/sonner';
 import { PWAHead } from '@/components/pwa-head';
 import './globals.css';
@@ -36,8 +35,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
-
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head suppressHydrationWarning>
@@ -45,7 +42,6 @@ export default function RootLayout({
         <PWAHead />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        {isDev && <Inspector />}
         {children}
         <Toaster position="top-right" />
       </body>

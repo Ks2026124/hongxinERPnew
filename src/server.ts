@@ -2,11 +2,10 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 
-const dev = process.env.COZE_PROJECT_ENV !== 'PROD';
+const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
-const port = parseInt(process.env.PORT || '5000', 10);
+const port = parseInt(process.env.PORT || '3000', 10);
 
-// Create Next.js app
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
@@ -26,10 +25,6 @@ app.prepare().then(() => {
     process.exit(1);
   });
   server.listen(port, () => {
-    console.log(
-      `> Server listening at http://${hostname}:${port} as ${
-        dev ? 'development' : process.env.COZE_PROJECT_ENV
-      }`,
-    );
+    console.log(`> Server listening at http://${hostname}:${port}`);
   });
 });

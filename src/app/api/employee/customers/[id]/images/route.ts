@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 import { getStorage, isValidImageType, MAX_IMAGE_SIZE, getFileExtension } from '@/lib/storage';
+import { computeSHA256, computePHash } from '@/lib/image-hash';
 
 // POST /api/employee/customers/[id]/images - 员工上传图片
 export async function POST(
@@ -55,9 +56,94 @@ export async function POST(
       return NextResponse.json({ error: '图片大小不能超过 10MB' }, { status: 400 });
     }
 
+    // 读取文件内容
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    // 计算 SHA-256 和 pHash
+    const sha256 = computeSHA256(buffer);
+    const phash = await computePHash(buffer);
+    
+    // 检查是否强制上传（用户确认相似图片后）
+    const force = formData.get('force') === 'true';
+    
+    // 查重：检查 SHA-256 完全相同的图片
+    const { data: exactMatches, error: checkError } = await supabase
+      .from('customer_images')
+      .select('id, created_at, employee_id, team_id')
+      .eq('sha256', sha256)
+      .limit(1);
+
+    if (checkError) {
+      console.error('[DEBUG] Duplicate check error:', checkError);
+    }
+
+    if (exactMatches && exactMatches.length > 0 && !force) {
+      const match = exactMatches[0];
+      
+      // 获取员工和团队信息
+      const { data: empData } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', match.employee_id)
+        .single();
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('team_name')
+        .eq('id', match.team_id)
+        .single();
+
+      return NextResponse.json({
+        error: '该图片已经上传过，无法重复上传。',
+        duplicate: 'exact',
+        duplicateInfo: {
+          employee_name: empData?.name || '未知',
+          team_name: teamData?.team_name || '未知',
+          uploaded_at: match.created_at,
+        },
+      }, { status: 409 });
+    }
+
+    // 查重：检查 pHash 相似的图片（仅在非强制模式下）
+    if (!force) {
+      const { data: allImages } = await supabase
+        .from('customer_images')
+        .select('id, phash, created_at, employee_id, team_id')
+        .not('phash', 'is', null)
+        .limit(500);
+
+      if (allImages) {
+        // 动态导入 isSimilar
+        const { isSimilar } = await import('@/lib/image-hash');
+        for (const img of allImages) {
+          if (img.phash && isSimilar(phash, img.phash)) {
+            // 获取员工和团队信息
+            const { data: empData } = await supabase
+              .from('profiles')
+              .select('name')
+              .eq('id', img.employee_id)
+              .single();
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('team_name')
+              .eq('id', img.team_id)
+              .single();
+
+            return NextResponse.json({
+              error: '检测到高度相似的微信截图，请确认是否已经上传。',
+              duplicate: 'similar',
+              duplicateInfo: {
+                employee_name: empData?.name || '未知',
+                team_name: teamData?.team_name || '未知',
+                uploaded_at: img.created_at,
+              },
+            }, { status: 409 });
+          }
+        }
+      }
+    }
+
     // 上传到对象存储
     const storage = getStorage();
-    const buffer = Buffer.from(await file.arrayBuffer());
     const ext = getFileExtension(file.name);
     const fileName = `customer-images/${customerId}/${Date.now()}.${ext}`;
     
@@ -73,7 +159,7 @@ export async function POST(
       expireTime: 86400 * 365, // 1 年有效期
     });
 
-    // 保存到数据库
+    // 保存到数据库（包含 sha256 和 phash）
     const { data, error } = await supabase
       .from('customer_images')
       .insert({
@@ -81,6 +167,8 @@ export async function POST(
         employee_id: user.userId,
         team_id: customer.team_id,
         image_url: key, // 存储 key，不是 URL
+        sha256: sha256,
+        phash: phash,
         created_at: new Date().toISOString(),
       })
       .select()

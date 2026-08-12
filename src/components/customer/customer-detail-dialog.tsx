@@ -7,8 +7,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { Upload, X, Image as ImageIcon, Trash2, ZoomIn } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Upload, X, Image as ImageIcon, Trash2, ZoomIn, AlertTriangle } from 'lucide-react';
 
 interface Customer {
   id: number;
@@ -26,6 +37,20 @@ interface CustomerImage {
   created_at: string;
 }
 
+interface DuplicateInfo {
+  id: number;
+  uploaded_at: string;
+  employee_name: string;
+  team_name: string;
+  customer_name: string;
+}
+
+interface DuplicateCheckResult {
+  duplicate: 'exact' | 'similar' | null;
+  message: string;
+  duplicates: DuplicateInfo[];
+}
+
 interface CustomerDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,9 +61,15 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
   const [images, setImages] = useState<CustomerImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 查重相关状态
+  const [duplicateResult, setDuplicateResult] = useState<DuplicateCheckResult | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   useEffect(() => {
     if (customer && open) {
@@ -62,39 +93,109 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !customer) return;
+    if (!files || files.length === 0 || !customer) return;
 
-    setUploading(true);
+    const file = files[0]; // 一次只处理一个文件
     setMessage('');
+    setChecking(true);
 
-    for (const file of Array.from(files)) {
+    try {
+      // 先进行查重检查
       const formData = new FormData();
       formData.append('file', file);
 
-      try {
-        const res = await fetch(`/api/employee/customers/${customer.id}/images`, {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.success) {
-          setMessage('图片上传成功');
-          fetchImages();
-        } else {
-          setMessage(data.error || '上传失败');
-        }
-      } catch {
-        setMessage('上传失败');
-      }
-    }
+      const checkRes = await fetch(`/api/employee/customers/${customer.id}/images/check-duplicate`, {
+        method: 'POST',
+        body: formData,
+      });
+      const checkData = await checkRes.json();
 
-    setUploading(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      if (!checkData.success) {
+        setMessage(checkData.error || '查重检查失败');
+        setChecking(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      if (checkData.duplicate === 'exact') {
+        // 完全相同，阻止上传
+        setDuplicateResult({
+          duplicate: 'exact',
+          message: checkData.message,
+          duplicates: checkData.duplicates,
+        });
+        setShowDuplicateDialog(true);
+        setChecking(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      if (checkData.duplicate === 'similar') {
+        // 高度相似，让用户确认
+        setDuplicateResult({
+          duplicate: 'similar',
+          message: checkData.message,
+          duplicates: checkData.duplicates,
+        });
+        setPendingFile(file);
+        setShowDuplicateDialog(true);
+        setChecking(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      // 没有重复，直接上传
+      await doUpload(file);
+    } catch {
+      setMessage('查重检查失败');
+    } finally {
+      setChecking(false);
     }
-    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!pendingFile) return;
+    setShowDuplicateDialog(false);
+    await doUpload(pendingFile);
+    setPendingFile(null);
+    setDuplicateResult(null);
+  };
+
+  const handleCancelUpload = () => {
+    setShowDuplicateDialog(false);
+    setPendingFile(null);
+    setDuplicateResult(null);
+  };
+
+  const doUpload = async (file: File) => {
+    if (!customer) return;
+    setUploading(true);
+    setMessage('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`/api/employee/customers/${customer.id}/images`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage('图片上传成功');
+        fetchImages();
+      } else {
+        setMessage(data.error || '上传失败');
+      }
+    } catch {
+      setMessage('上传失败');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const handleDelete = async (imageId: number) => {
@@ -164,17 +265,16 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  multiple
-                  onChange={handleUpload}
+                  onChange={handleFileSelect}
                   className="hidden"
                 />
                 <Button
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploading || checking}
                   size="sm"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? '上传中...' : '上传图片'}
+                  {checking ? '查重中...' : uploading ? '上传中...' : '上传图片'}
                 </Button>
               </div>
             </div>
@@ -246,6 +346,42 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
             className="max-w-full max-h-full object-contain"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* 重复图片确认对话框 */}
+      {showDuplicateDialog && duplicateResult && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-2">
+              {duplicateResult.duplicate === 'exact' ? '图片重复' : '发现相似图片'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {duplicateResult.message}
+            </p>
+            <div className="space-y-3 mb-6 max-h-48 overflow-y-auto">
+              {duplicateResult.duplicates.map((dup) => (
+                <div key={dup.id} className="p-3 border rounded-md bg-muted/50">
+                  <p className="text-sm font-medium">上传员工：{dup.employee_name}</p>
+                  <p className="text-xs text-muted-foreground">所属团队：{dup.team_name}</p>
+                  <p className="text-xs text-muted-foreground">所属客户：{dup.customer_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    上传时间：{new Date(dup.uploaded_at).toLocaleString('zh-CN')}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleCancelUpload}>
+                取消
+              </Button>
+              {duplicateResult.duplicate === 'similar' && (
+                <Button onClick={handleConfirmUpload}>
+                  确认上传
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>

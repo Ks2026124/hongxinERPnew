@@ -18,7 +18,7 @@ export async function GET() {
     // 获取员工信息 + 团队名称
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, username, name, phone, role, team_id, status, avatar_url, created_at')
+      .select('id, username, name, phone, role, team_id, status, avatar_url, created_at, must_change_password')
       .eq('id', user.userId)
       .single();
 
@@ -60,6 +60,7 @@ export async function GET() {
         status_label: statusMap[profile.status] || profile.status,
         avatar_url: profile.avatar_url,
         created_at: profile.created_at,
+        must_change_password: profile.must_change_password || false,
       },
     });
   } catch (err) {

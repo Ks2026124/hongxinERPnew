@@ -39,12 +39,12 @@ export default function RootLayout({
   const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
 
   return (
-    <html lang="zh-CN">
-      <head>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head suppressHydrationWarning>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <PWAHead />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         {isDev && <Inspector />}
         {children}
         <Toaster position="top-right" />

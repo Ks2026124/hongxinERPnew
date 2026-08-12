@@ -45,6 +45,7 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const [filterTeamId, setFilterTeamId] = useState<string>('');
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('');
 
@@ -174,12 +175,22 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
               {images.map((img) => (
                 <div key={img.id} className="group relative">
                   <div className="aspect-square rounded-lg overflow-hidden border bg-muted">
-                    <img
-                      src={img.image_url}
-                      alt="微信截图"
-                      className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => setPreviewImage(img.image_url)}
-                    />
+                    {failedImages.has(img.id) ? (
+                      <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                        <div className="text-center">
+                          <ImageIcon className="mx-auto h-8 w-8 opacity-50" />
+                          <p className="mt-1 text-xs">图片丢失</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={img.image_url}
+                        alt="微信截图"
+                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setPreviewImage(img.image_url)}
+                        onError={() => setFailedImages(prev => new Set(prev).add(img.id))}
+                      />
+                    )}
                   </div>
                   <div className="mt-2 space-y-1">
                     <p className="text-xs font-medium truncate">

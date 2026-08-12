@@ -215,7 +215,8 @@ export default function AdminTeamsPage() {
               <p className="text-sm">点击"创建团队"添加第一个团队</p>
             </div>
           ) : (
-            <Table>
+            <div className="border rounded-lg overflow-x-auto">
+              <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>团队名称</TableHead>
@@ -269,6 +270,7 @@ export default function AdminTeamsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

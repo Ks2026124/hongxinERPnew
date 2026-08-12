@@ -1,6 +1,7 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inspector } from 'react-dev-inspector';
 import { Toaster } from '@/components/ui/sonner';
+import { PWAHead } from '@/components/pwa-head';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,6 +14,21 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '鸿信ERP',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#C4956A',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -24,6 +40,10 @@ export default function RootLayout({
 
   return (
     <html lang="zh-CN">
+      <head>
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <PWAHead />
+      </head>
       <body className="antialiased">
         {isDev && <Inspector />}
         {children}

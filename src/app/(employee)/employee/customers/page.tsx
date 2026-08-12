@@ -199,12 +199,12 @@ export default function EmployeeCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">我的客户</h1>
           <p className="text-muted-foreground mt-1">管理您添加的客户信息</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
+        <Button onClick={() => setShowAddDialog(true)} className="self-start sm:self-auto">
           <Plus className="w-4 h-4 mr-2" />
           新增客户
         </Button>
@@ -226,8 +226,8 @@ export default function EmployeeCustomersPage() {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
+        <div className="border rounded-lg overflow-x-auto">
+          <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
                 <TableHead>客户姓名</TableHead>

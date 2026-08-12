@@ -338,8 +338,8 @@ export default function AdminCustomersPage() {
           <p className="mt-4 text-muted-foreground">暂无客户数据</p>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
+        <div className="border rounded-lg overflow-x-auto">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
                 <TableHead>客户姓名</TableHead>

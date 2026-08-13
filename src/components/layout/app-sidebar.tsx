@@ -29,7 +29,7 @@ interface AppSidebarProps {
 export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }: AppSidebarProps) {
   const pathname = usePathname();
   const isDrawer = mode === 'drawer';
-  const widthClass = isDrawer ? 'w-full' : (collapsed ? 'w-16' : 'w-60');
+  const widthClass = isDrawer ? 'w-auto min-w-[180px]' : (collapsed ? 'w-16' : 'w-60');
 
   return (
     <aside
@@ -95,10 +95,10 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
 
       {/* Navigation */}
       <nav className={cn(
-        'flex flex-col overflow-y-auto flex-1',
+        'flex flex-col overflow-y-auto',
         isDrawer
-          ? 'gap-0.5 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
-          : 'gap-1 p-2 pb-[env(safe-area-inset-bottom)]'
+          ? 'gap-0.5 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex-1'
+          : 'gap-1 p-2 pb-[env(safe-area-inset-bottom)] flex-1'
       )}>
         {items.map((item) => {
           const Icon = item.icon;

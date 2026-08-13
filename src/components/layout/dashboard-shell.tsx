@@ -66,7 +66,7 @@ export function DashboardShell({
 
       {/* ===== Mobile Drawer Sidebar ===== */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-[240px] max-w-[80vw] transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-[200px] max-w-[75vw] transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -187,7 +187,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('微信截图验证异常:', err);
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : '未知错误';
+    return NextResponse.json({ error: `服务器错误: ${msg}` }, { status: 500 });
   }
 }
 

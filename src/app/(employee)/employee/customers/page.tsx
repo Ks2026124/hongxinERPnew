@@ -174,6 +174,24 @@ export default function EmployeeCustomersPage() {
         method: 'POST',
         body: formDataUpload,
       });
+
+      // 检查 HTTP 状态码
+      if (!res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const errData = await res.json();
+          setVerifyStep('failed');
+          setVerifyMessage(errData.error || `服务器错误 (${res.status})`);
+        } else if (res.status === 413) {
+          setVerifyStep('failed');
+          setVerifyMessage('图片文件过大，请上传小于 10MB 的图片');
+        } else {
+          setVerifyStep('failed');
+          setVerifyMessage(`服务器错误 (${res.status})，请稍后重试`);
+        }
+        return;
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -192,9 +210,16 @@ export default function EmployeeCustomersPage() {
         setVerifyStep('failed');
         setVerifyMessage(data.error || '验证失败');
       }
-    } catch {
+    } catch (err) {
       setVerifyStep('failed');
-      setVerifyMessage('网络错误，请重试');
+      // 区分网络错误和其他错误
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setVerifyMessage('网络连接异常，请检查网络后重试');
+      } else if (err instanceof SyntaxError) {
+        setVerifyMessage('服务器响应格式错误，请联系管理员');
+      } else {
+        setVerifyMessage('网络错误，请重试');
+      }
     }
   };
 

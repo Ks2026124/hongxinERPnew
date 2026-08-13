@@ -43,16 +43,18 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
     >
       {/* Header */}
       <div className={cn(
-        'flex items-center px-4 pt-[env(safe-area-inset-top)] shrink-0',
-        isDrawer ? 'h-16 min-h-16' : 'h-14 min-h-14'
+        'flex items-center shrink-0',
+        isDrawer
+          ? 'px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 h-auto'
+          : 'px-4 pt-[env(safe-area-inset-top)] h-14 min-h-14'
       )}>
         {!collapsed ? (
           <Link
             href={title.includes('管理员') ? '/admin' : '/employee'}
-            className="flex items-center gap-2 flex-1 min-w-0"
+            className="flex items-center gap-2.5 flex-1 min-w-0"
           >
-            <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg shrink-0" />
-            <h1 className="text-base font-semibold text-sidebar-foreground truncate">
+            <img src="/icon-192x192.png" alt="鸿信ERP" className={cn("rounded-lg shrink-0", isDrawer ? "h-9 w-9" : "h-8 w-8")} />
+            <h1 className={cn("font-semibold text-sidebar-foreground truncate", isDrawer ? "text-lg" : "text-base")}>
               {title}
             </h1>
           </Link>
@@ -71,7 +73,7 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
             onClick={onToggle}
             className="h-8 w-8 shrink-0"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         ) : (
           <Button
@@ -92,7 +94,12 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 p-2 overflow-y-auto flex-1 pb-[env(safe-area-inset-bottom)]">
+      <nav className={cn(
+        'flex flex-col overflow-y-auto flex-1',
+        isDrawer
+          ? 'gap-0.5 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+          : 'gap-1 p-2 pb-[env(safe-area-inset-bottom)]'
+      )}>
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -101,13 +108,16 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-all duration-200',
+                'flex items-center rounded-md transition-all duration-200',
+                isDrawer
+                  ? 'gap-3 px-3 py-3 text-[15px]'
+                  : 'gap-3 px-3 py-2.5 text-sm',
                 isActive
-                  ? 'bg-blue-500/10 text-blue-600 font-medium border-r-2 border-blue-500'
+                  ? 'bg-blue-500/10 text-blue-600 font-medium'
                   : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className={cn("shrink-0", isDrawer ? "h-5 w-5" : "h-4 w-4")} />
               {(!collapsed || isDrawer) && <span className="truncate">{item.label}</span>}
             </Link>
           );

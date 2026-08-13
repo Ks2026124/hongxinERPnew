@@ -57,14 +57,14 @@ export function DashboardShell({
       {/* ===== Mobile Drawer Overlay ===== */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* ===== Mobile Drawer Sidebar ===== */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-[72vw] max-w-[300px] transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -29,7 +29,7 @@ interface AdminImage {
   team_id: number;
   image_url: string;
   created_at: string;
-  customer: { id: number; customer_name: string } | null;
+  customer: { id: number; customer_name: string; remark: string | null } | null;
   employee: { id: number; name: string } | null;
   team: { id: number; team_name: string } | null;
 }
@@ -61,7 +61,10 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
     try {
       const res = await fetch('/api/admin/teams');
       const data = await res.json();
-      if (data.success) setTeams(data.data);
+      const teamList = data.data || data;
+      if (Array.isArray(teamList)) {
+        setTeams(teamList.map((t: { id: number; team_name: string }) => ({ id: t.id, team_name: t.team_name })));
+      }
     } catch (err) {
       console.error('获取团队失败:', err);
     }
@@ -71,7 +74,10 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
     try {
       const res = await fetch('/api/admin/employees');
       const data = await res.json();
-      if (data.success) setEmployees(data.data);
+      const empList = data.data || data;
+      if (Array.isArray(empList)) {
+        setEmployees(empList.map((e: { id: number; name: string }) => ({ id: e.id, name: e.name })));
+      }
     } catch (err) {
       console.error('获取员工失败:', err);
     }
@@ -192,14 +198,22 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
                       />
                     )}
                   </div>
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-2 space-y-0.5">
                     <p className="text-xs font-medium truncate">
-                      {img.customer?.customer_name || '未知客户'}
+                      客户：{img.customer?.customer_name || '未关联客户'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      上传人：{img.employee?.name || '未知'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      团队：{img.team?.team_name || '未知'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {img.employee?.name || '未知'} / {img.team?.team_name || '未知'}
+                      {formatDate(img.created_at)}
                     </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(img.created_at)}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      备注：{img.customer?.remark || '暂无'}
+                    </p>
                   </div>
                 </div>
               ))}

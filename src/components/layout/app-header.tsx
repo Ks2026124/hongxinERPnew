@@ -31,28 +31,30 @@ export function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-6">
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-20 flex min-h-12 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:min-h-14 md:px-6 md:pb-2">
+      <div className="flex items-center gap-2 min-w-0">
         {showMenuButton && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 md:hidden"
+            className="h-9 w-9 shrink-0 md:hidden"
             onClick={onMenuClick}
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <h2 className="text-base md:text-lg font-semibold text-foreground truncate">
+          {title}
+        </h2>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2 shrink-0">
         <Button variant="ghost" size="icon" className="h-9 w-9">
           <Bell className="h-4 w-4" />
         </Button>
         <Separator orientation="vertical" className="h-6" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2">
+            <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">管理员</span>
             </Button>

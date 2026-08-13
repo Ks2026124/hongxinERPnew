@@ -23,74 +23,72 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
+  // Close mobile drawer on route change
   useEffect(() => {
-    const check = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (mobile) {
-        setMobileOpen(false);
-      }
-    };
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
+    setMobileOpen(false);
+  }, [headerTitle]);
 
-  const sidebarWidth = isMobile
-    ? mobileOpen
-      ? '15rem'
-      : '0rem'
-    : collapsed
-      ? '4rem'
-      : '15rem';
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
   return (
-    <div className="min-h-[100dvh] bg-background overflow-x-hidden">
-      {/* Mobile backdrop */}
-      {isMobile && mobileOpen && (
+    <div className="min-h-[100dvh] bg-background">
+      {/* ===== Desktop Sidebar (hidden on mobile) ===== */}
+      <div className="hidden md:block">
+        <AppSidebar
+          title={title}
+          items={navItems}
+          collapsed={collapsed}
+          onToggle={() => setCollapsed(!collapsed)}
+          mode="fixed"
+        />
+      </div>
+
+      {/* ===== Mobile Drawer Overlay ===== */}
+      {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* ===== Mobile Drawer Sidebar ===== */}
       <div
-        className={
-          isMobile
-            ? `fixed inset-y-0 left-0 z-40 transition-transform duration-300 ${
-                mobileOpen ? 'translate-x-0' : '-translate-x-full'
-              }`
-            : ''
-        }
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <AppSidebar
           title={title}
           items={navItems}
-          collapsed={!isMobile && collapsed}
-          onToggle={() => {
-            if (isMobile) {
-              setMobileOpen(!mobileOpen);
-            } else {
-              setCollapsed(!collapsed);
-            }
-          }}
+          collapsed={false}
+          onToggle={() => setMobileOpen(false)}
+          mode="drawer"
         />
       </div>
 
-      {/* Main content */}
+      {/* ===== Main Content Area ===== */}
       <div
-        className="transition-all duration-300 min-h-[100dvh] flex flex-col max-w-full"
-        style={{ marginLeft: isMobile ? '0' : sidebarWidth }}
+        className={`flex flex-col min-h-[100dvh] transition-[margin] duration-300 ${
+          collapsed ? 'md:ml-16' : 'md:ml-60'
+        }`}
       >
         <AppHeader
           title={headerTitle}
           onMenuClick={() => setMobileOpen(true)}
-          showMenuButton={isMobile}
+          showMenuButton
         />
-        <main className="flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6 overflow-x-hidden">
+        <main className="flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6">
           {children}
         </main>
       </div>

@@ -248,12 +248,12 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">客户管理</h1>
-          <p className="text-muted-foreground mt-1">查看和管理所有客户信息</p>
+          <h1 className="text-xl md:text-2xl font-bold">客户管理</h1>
+          <p className="text-sm text-muted-foreground mt-1">查看和管理所有客户信息</p>
         </div>
-        <Button variant="outline" onClick={() => setShowImageGallery(true)}>
+        <Button variant="outline" onClick={() => setShowImageGallery(true)} className="self-start sm:self-auto">
           <ImageIcon className="w-4 h-4 mr-2" />
           微信截图
         </Button>

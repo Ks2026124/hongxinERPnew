@@ -8,6 +8,7 @@ import {
   UserCog,
   Contact,
   ChevronLeft,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,48 +23,76 @@ interface AppSidebarProps {
   }[];
   collapsed: boolean;
   onToggle: () => void;
+  mode?: 'fixed' | 'drawer';
 }
 
-export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProps) {
+export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }: AppSidebarProps) {
   const pathname = usePathname();
+  const isDrawer = mode === 'drawer';
+  const widthClass = isDrawer ? 'w-full' : (collapsed ? 'w-16' : 'w-60');
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-[100dvh] border-r border-border bg-sidebar transition-all duration-300',
-        'pb-[env(safe-area-inset-bottom)]',
-        collapsed ? 'w-16' : 'w-60'
+        'h-[100dvh] border-r border-border bg-sidebar flex flex-col',
+        widthClass,
+        isDrawer && 'relative',
+        !isDrawer && 'fixed left-0 top-0 z-30',
+        'transition-all duration-300'
       )}
     >
-      <div className="flex min-h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
+      {/* Header */}
+      <div className={cn(
+        'flex items-center px-4 pt-[env(safe-area-inset-top)] shrink-0',
+        isDrawer ? 'h-16 min-h-16' : 'h-14 min-h-14'
+      )}>
         {!collapsed ? (
-          <Link href={title.includes('管理员') ? '/admin' : '/employee'} className="flex items-center gap-2">
-            <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg" />
+          <Link
+            href={title.includes('管理员') ? '/admin' : '/employee'}
+            className="flex items-center gap-2 flex-1 min-w-0"
+          >
+            <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg shrink-0" />
             <h1 className="text-base font-semibold text-sidebar-foreground truncate">
               {title}
             </h1>
           </Link>
         ) : (
-          <Link href={title.includes('管理员') ? '/admin' : '/employee'} className="flex items-center justify-center w-full">
+          <Link
+            href={title.includes('管理员') ? '/admin' : '/employee'}
+            className="flex items-center justify-center w-full"
+          >
             <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg" />
           </Link>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className="h-8 w-8 shrink-0"
-        >
-          <ChevronLeft
-            className={cn(
-              'h-4 w-4 transition-transform',
-              collapsed && 'rotate-180'
-            )}
-          />
-        </Button>
+        {isDrawer ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8 shrink-0"
+          >
+            <ChevronLeft
+              className={cn(
+                'h-4 w-4 transition-transform',
+                collapsed && 'rotate-180'
+              )}
+            />
+          </Button>
+        )}
       </div>
       <Separator />
-      <nav className="flex flex-col gap-1 p-2">
+
+      {/* Navigation */}
+      <nav className="flex flex-col gap-1 p-2 overflow-y-auto flex-1 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -72,14 +101,14 @@ export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProp
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-all duration-200',
+                'flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-all duration-200',
                 isActive
                   ? 'bg-[#C4956A]/10 text-[#C4956A] font-medium border-r-2 border-[#C4956A]'
                   : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {(!collapsed || isDrawer) && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}

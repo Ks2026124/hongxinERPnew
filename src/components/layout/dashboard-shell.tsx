@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppHeader } from '@/components/layout/app-header';
 
@@ -21,13 +22,14 @@ export function DashboardShell({
   navItems,
   children,
 }: DashboardShellProps) {
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, [headerTitle]);
+  }, [pathname]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -64,7 +66,7 @@ export function DashboardShell({
 
       {/* ===== Mobile Drawer Sidebar ===== */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-[72vw] max-w-[300px] transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

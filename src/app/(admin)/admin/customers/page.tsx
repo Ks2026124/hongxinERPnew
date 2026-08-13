@@ -122,13 +122,17 @@ export default function AdminCustomersPage() {
     }
   };
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (overrides?: { teamId?: string; employeeId?: string; startDate?: string; endDate?: string }) => {
     try {
       const params = new URLSearchParams();
-      if (filterTeamId) params.set('team_id', filterTeamId);
-      if (filterEmployeeId) params.set('employee_id', filterEmployeeId);
-      if (filterStartDate) params.set('start_date', filterStartDate);
-      if (filterEndDate) params.set('end_date', filterEndDate);
+      const tId = overrides?.teamId !== undefined ? overrides.teamId : filterTeamId;
+      const eId = overrides?.employeeId !== undefined ? overrides.employeeId : filterEmployeeId;
+      const sDate = overrides?.startDate !== undefined ? overrides.startDate : filterStartDate;
+      const eDate = overrides?.endDate !== undefined ? overrides.endDate : filterEndDate;
+      if (tId && tId !== 'all') params.set('team_id', tId);
+      if (eId && eId !== 'all') params.set('employee_id', eId);
+      if (sDate) params.set('start_date', sDate);
+      if (eDate) params.set('end_date', eDate);
 
       const res = await fetch(`/api/admin/customers?${params.toString()}`);
       const data = await res.json();
@@ -153,7 +157,7 @@ export default function AdminCustomersPage() {
     setFilterStartDate('');
     setFilterEndDate('');
     setLoading(true);
-    setTimeout(() => fetchCustomers(), 0);
+    fetchCustomers({ teamId: '', employeeId: '', startDate: '', endDate: '' });
   };
 
   const handleEdit = async () => {

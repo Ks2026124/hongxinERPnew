@@ -27,17 +27,20 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false });
 
-    if (teamId) {
+    if (teamId && teamId !== 'all') {
       query = query.eq('team_id', parseInt(teamId));
     }
-    if (employeeId) {
+    if (employeeId && employeeId !== 'all') {
       query = query.eq('employee_id', parseInt(employeeId));
     }
     if (startDate) {
-      query = query.gte('created_at', startDate);
+      query = query.gte('created_at', new Date(startDate + 'T00:00:00+08:00').toISOString());
     }
     if (endDate) {
-      query = query.lte('created_at', endDate + 'T23:59:59');
+      // 结束日期 +1 天，使用 < 半开区间，确保包含结束日期当天全部时间
+      const end = new Date(endDate + 'T00:00:00+08:00');
+      end.setDate(end.getDate() + 1);
+      query = query.lt('created_at', end.toISOString());
     }
 
     const { data, error } = await query;

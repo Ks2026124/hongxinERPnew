@@ -100,7 +100,12 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-          <Button className="w-full" size="lg" type="submit" disabled={loading}>
+          <Button
+            className="w-full bg-gradient-to-r from-[#C4956A] to-[#D4A574] hover:from-[#B8855A] hover:to-[#C4956A] text-white shadow-md hover:shadow-lg transition-all duration-200"
+            size="lg"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

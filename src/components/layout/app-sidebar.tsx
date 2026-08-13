@@ -71,9 +71,9 @@ export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProp
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors',
+                'flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-all duration-200',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                  ? 'bg-[#C4956A]/10 text-[#C4956A] font-medium border-r-2 border-[#C4956A]'
                   : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >

@@ -229,7 +229,12 @@ export default function RegisterPage() {
               required
             />
           </div>
-          <Button className="w-full" size="lg" type="submit" disabled={loading}>
+          <Button
+            className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+            size="lg"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

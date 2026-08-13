@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import sharp from 'sharp';
 
 /**
  * 计算图片的 SHA-256 哈希值
@@ -13,13 +12,28 @@ export function computeSHA256(buffer: Buffer): string {
 /**
  * 计算图片的感知哈希（pHash）
  * 使用 DCT（离散余弦变换）算法
+ * 注意：依赖 sharp 库，仅在支持原生模块的环境中可用（如本地开发）
+ * 在 Vercel Serverless 等不支持 sharp 的环境中，此函数会抛出异常
  * @param buffer 图片文件的 Buffer
  * @returns 64 位的 pHash 字符串（hex 格式，16 个字符）
  */
 export async function computePHash(buffer: Buffer): Promise<string> {
+  // 动态导入 sharp，避免顶层静态导入导致整个模块在 Vercel 上加载失败
+  let sharp: typeof import('sharp').default;
+  try {
+    const mod = await import('sharp');
+    sharp = mod.default;
+  } catch (err) {
+    throw new Error(
+      `sharp 库不可用，无法计算 pHash。` +
+      `请确保已安装 sharp 及其原生依赖。` +
+      `原始错误: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
   // 1. 将图片缩小到 32x32 灰度图
   const size = 32;
-  const { data, info } = await sharp(buffer)
+  const { data } = await sharp(buffer)
     .resize(size, size, { fit: 'fill' })
     .grayscale()
     .raw()

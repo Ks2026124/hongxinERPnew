@@ -136,9 +136,13 @@ export default function AdminCustomersPage() {
 
       const res = await fetch(`/api/admin/customers?${params.toString()}`);
       const data = await res.json();
-      // API 返回 { data: customers }，没有 success 字段
-      if (data.data !== undefined) {
+      console.log('[客户管理] API 响应:', { status: res.status, data });
+      // API 返回 { success: true, data: customers }
+      if (data && data.data !== undefined) {
+        console.log('[客户管理] 设置客户数据:', data.data.length, '条');
         setCustomers(data.data);
+      } else {
+        console.warn('[客户管理] API 响应格式异常:', data);
       }
     } catch (err) {
       console.error('获取客户列表失败:', err);

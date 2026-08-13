@@ -136,7 +136,8 @@ export default function AdminCustomersPage() {
 
       const res = await fetch(`/api/admin/customers?${params.toString()}`);
       const data = await res.json();
-      if (data.success) {
+      // API 返回 { data: customers }，没有 success 字段
+      if (data.data !== undefined) {
         setCustomers(data.data);
       }
     } catch (err) {

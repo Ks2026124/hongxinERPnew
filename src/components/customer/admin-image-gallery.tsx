@@ -52,10 +52,19 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
   useEffect(() => {
     if (open) {
       fetchTeams();
-      fetchEmployees();
+      fetchEmployees(filterTeamId);
       fetchImages();
     }
   }, [open]);
+
+  // 当团队变化时，重新获取该团队的员工列表
+  useEffect(() => {
+    if (open) {
+      fetchEmployees(filterTeamId);
+      // 团队变化时清空员工选择
+      setFilterEmployeeId('');
+    }
+  }, [filterTeamId]);
 
   const fetchTeams = async () => {
     try {
@@ -70,9 +79,13 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
     }
   };
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (teamId?: string) => {
     try {
-      const res = await fetch('/api/admin/employees');
+      const params = new URLSearchParams();
+      if (teamId && teamId !== 'all') {
+        params.set('team_id', teamId);
+      }
+      const res = await fetch(`/api/admin/employees?${params.toString()}`);
       const data = await res.json();
       const empList = data.data || data;
       if (Array.isArray(empList)) {

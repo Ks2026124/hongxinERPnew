@@ -1,7 +1,7 @@
 // 鸿信ERP Service Worker
 // 仅缓存静态资源，不缓存敏感业务数据
 
-const CACHE_NAME = 'hongxin-erp-v2';
+const CACHE_NAME = 'hongxin-erp-v3';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/icon-192x192.png',

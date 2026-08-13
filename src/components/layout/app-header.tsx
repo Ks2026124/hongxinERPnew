@@ -93,7 +93,12 @@ export function AppHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                const profilePath = userInfo?.role === 'admin' ? '/admin/profile' : '/employee/profile';
+                router.push(profilePath);
+              }}
+            >
               <User className="mr-2 h-4 w-4" />
               个人信息
             </DropdownMenuItem>

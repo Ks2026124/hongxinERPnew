@@ -108,7 +108,7 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center rounded-md transition-all duration-200',
+                'flex items-center rounded-md transition-all duration-200 w-full',
                 isDrawer
                   ? 'gap-3 px-3 py-3 text-[15px]'
                   : 'gap-3 px-3 py-2.5 text-sm',

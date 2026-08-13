@@ -48,10 +48,16 @@ export default function AdminDashboard() {
   };
 
   const getRankStyle = (index: number) => {
-    if (index === 0) return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-    if (index === 1) return 'bg-blue-400/10 text-blue-500 border-blue-400/20';
-    if (index === 2) return 'bg-blue-300/10 text-blue-500 border-blue-300/20';
-    return 'bg-muted text-muted-foreground border-border';
+    // 蓝色渐变：第 1 名最深，后续逐渐变浅
+    const styles = [
+      'bg-blue-600/15 text-blue-700 border-blue-600/30',  // 第 1 名：最深蓝
+      'bg-blue-500/12 text-blue-600 border-blue-500/25',  // 第 2 名
+      'bg-blue-400/10 text-blue-600 border-blue-400/20',  // 第 3 名
+      'bg-blue-300/8 text-blue-500 border-blue-300/15',   // 第 4 名
+      'bg-blue-200/6 text-blue-500 border-blue-200/10',   // 第 5 名
+      'bg-blue-100/4 text-blue-400 border-blue-100/8',    // 第 6 名及以后
+    ];
+    return styles[Math.min(index, styles.length - 1)];
   };
 
   if (loading) {

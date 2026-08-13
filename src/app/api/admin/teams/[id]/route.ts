@@ -33,20 +33,31 @@ export async function DELETE(
       return NextResponse.json({ error: '团队不存在' }, { status: 404 });
     }
 
-    // 检查团队是否有员工
-    const { data: employees, error: countError } = await supabase
+    // 检查团队是否有活跃员工（排除已删除的）
+    const { data: activeEmployees, error: countError } = await supabase
       .from('profiles')
       .select('id')
       .eq('team_id', teamId)
+      .eq('is_deleted', false)
       .limit(1);
 
     if (countError) throw countError;
 
-    if (employees && employees.length > 0) {
+    if (activeEmployees && activeEmployees.length > 0) {
       return NextResponse.json(
-        { error: '该团队还有员工，无法删除' },
+        { error: '该团队还有在职员工，无法删除' },
         { status: 400 }
       );
+    }
+
+    // 清除已删除员工对该团队的引用（避免外键约束阻止删除）
+    const { error: clearError } = await supabase
+      .from('profiles')
+      .update({ team_id: null })
+      .eq('team_id', teamId);
+
+    if (clearError) {
+      console.warn('清除已删除员工的team_id失败（非致命）:', clearError.message);
     }
 
     // 删除团队

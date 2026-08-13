@@ -23,14 +23,15 @@ export async function GET() {
 
     if (teamsError) throw teamsError;
 
-    // 获取每个团队的员工人数
+    // 获取每个团队的活跃员工人数（排除已删除的员工）
     const { data: employeeCounts, error: countError } = await supabase
       .from('profiles')
-      .select('team_id');
+      .select('team_id')
+      .eq('is_deleted', false);
 
     if (countError) throw countError;
 
-    // 统计每个团队的员工数
+    // 统计每个团队的活跃员工数
     const countMap: Record<number, number> = {};
     for (const emp of employeeCounts || []) {
       if (emp.team_id) {

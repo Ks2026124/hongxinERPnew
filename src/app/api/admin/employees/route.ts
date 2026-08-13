@@ -15,6 +15,7 @@ export async function GET() {
       .from('profiles')
       .select('id, username, name, phone, role, team_id, status, is_deleted, deleted_at, created_at, teams(team_name)')
       .eq('role', 'employee')
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(`查询员工列表失败: ${error.message}`);

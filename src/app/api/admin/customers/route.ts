@@ -34,13 +34,16 @@ export async function GET(request: NextRequest) {
       query = query.eq('employee_id', parseInt(employeeId));
     }
     if (startDate) {
-      query = query.gte('created_at', new Date(startDate + 'T00:00:00+08:00').toISOString());
+      // 直接使用带时区的字符串，避免 toISOString() 转换为 UTC 导致日期偏移
+      query = query.gte('created_at', `${startDate}T00:00:00+08:00`);
     }
     if (endDate) {
       // 结束日期 +1 天，使用 < 半开区间，确保包含结束日期当天全部时间
-      const end = new Date(endDate + 'T00:00:00+08:00');
+      const end = new Date(`${endDate}T00:00:00+08:00`);
       end.setDate(end.getDate() + 1);
-      query = query.lt('created_at', end.toISOString());
+      // 格式化为 YYYY-MM-DDTHH:mm:ss+08:00
+      const endDateStr = end.toISOString().split('T')[0];
+      query = query.lt('created_at', `${endDateStr}T00:00:00+08:00`);
     }
 
     const { data, error } = await query;

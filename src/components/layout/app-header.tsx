@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Bell, LogOut, Menu, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+interface UserInfo {
+  name: string;
+  role: string;
+  username: string;
+}
 
 interface AppHeaderProps {
   title: string;
@@ -24,11 +31,37 @@ export function AppHeader({
   showMenuButton = false,
 }: AppHeaderProps) {
   const router = useRouter();
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => {
+        if (!res.ok) throw new Error('Unauthorized');
+        return res.json();
+      })
+      .then((data) => {
+        setUserInfo({
+          name: data.name || data.username,
+          role: data.role,
+          username: data.username,
+        });
+      })
+      .catch(() => {
+        // Silently fail - user will be redirected by middleware
+      });
+  }, []);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
   };
+
+  // Display name: admin shows "管理员", employee shows their name
+  const displayName = userInfo
+    ? userInfo.role === 'admin'
+      ? '管理员'
+      : userInfo.name
+    : '';
 
   return (
     <header className="sticky top-0 z-20 flex min-h-12 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:min-h-14 md:px-6 md:pb-2">
@@ -56,7 +89,7 @@ export function AppHeader({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">管理员</span>
+              <span className="hidden sm:inline">{displayName || '加载中...'}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">

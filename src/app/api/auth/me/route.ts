@@ -1,27 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getSessionFromCookie } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 
 export async function GET() {
-  try {
-    const session = await getSessionFromCookie();
-
-    if (!session) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
-
-    return NextResponse.json({
-      data: {
-        userId: session.userId,
-        username: session.username,
-        role: session.role,
-        teamId: session.teamId,
-        name: session.name,
-        status: session.status,
-        must_change_password: session.mustChangePassword || false,
-      },
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : '获取用户信息失败';
-    return NextResponse.json({ error: message }, { status: 500 });
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: '未登录' },
+      { status: 401 }
+    );
   }
+
+  return NextResponse.json({
+    id: user.userId,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    teamId: user.teamId,
+    status: user.status,
+  });
 }

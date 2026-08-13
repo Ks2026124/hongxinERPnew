@@ -101,7 +101,7 @@ export default function LoginPage() {
             </div>
           </div>
           <Button
-            className="w-full bg-gradient-to-r from-[#C4956A] to-[#D4A574] hover:from-[#B8855A] hover:to-[#C4956A] text-white shadow-md hover:shadow-lg transition-all duration-200"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
             size="lg"
             type="submit"
             disabled={loading}

@@ -48,9 +48,9 @@ export default function AdminDashboard() {
   };
 
   const getRankStyle = (index: number) => {
-    if (index === 0) return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-    if (index === 1) return 'bg-gray-400/10 text-gray-600 border-gray-400/20';
-    if (index === 2) return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+    if (index === 0) return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+    if (index === 1) return 'bg-blue-400/10 text-blue-500 border-blue-400/20';
+    if (index === 2) return 'bg-blue-300/10 text-blue-500 border-blue-300/20';
     return 'bg-muted text-muted-foreground border-border';
   };
 

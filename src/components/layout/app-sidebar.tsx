@@ -103,7 +103,7 @@ export function AppSidebar({ title, items, collapsed, onToggle, mode = 'fixed' }
               className={cn(
                 'flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-all duration-200',
                 isActive
-                  ? 'bg-[#C4956A]/10 text-[#C4956A] font-medium border-r-2 border-[#C4956A]'
+                  ? 'bg-blue-500/10 text-blue-600 font-medium border-r-2 border-blue-500'
                   : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >

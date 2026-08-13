@@ -69,9 +69,9 @@ export default function EmployeeDashboard() {
   };
 
   const getRankStyle = (index: number) => {
-    if (index === 0) return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-    if (index === 1) return 'bg-gray-400/10 text-gray-600 border-gray-400/20';
-    if (index === 2) return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+    if (index === 0) return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+    if (index === 1) return 'bg-blue-400/10 text-blue-500 border-blue-400/20';
+    if (index === 2) return 'bg-blue-300/10 text-blue-500 border-blue-300/20';
     return 'bg-muted text-muted-foreground border-border';
   };
 
@@ -138,7 +138,7 @@ export default function EmployeeDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+              <Trophy className="h-5 w-5 text-blue-500" />
               团队排行榜
             </CardTitle>
             <p className="text-sm text-muted-foreground">

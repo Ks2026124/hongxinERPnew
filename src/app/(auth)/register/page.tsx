@@ -230,7 +230,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button
-            className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
             size="lg"
             type="submit"
             disabled={loading}

@@ -4,8 +4,8 @@
   "description": "员工客户管理系统",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAF6F0",
-  "theme_color": "#C4956A",
+  "background_color": "#F0F4FF",
+  "theme_color": "#2563EB",
   "orientation": "any",
   "icons": [
     {

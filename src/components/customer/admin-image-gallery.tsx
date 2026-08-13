@@ -114,7 +114,7 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
   return (
     <>
       <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl bg-background border-l shadow-lg overflow-y-auto">
+      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl bg-background border-l shadow-lg overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)]">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -211,7 +211,7 @@ export function AdminImageGallery({ open, onOpenChange }: AdminImageGalleryProps
       {/* 图片预览 */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
           onClick={() => setPreviewImage(null)}
         >
           <button

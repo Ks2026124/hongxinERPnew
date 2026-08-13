@@ -47,7 +47,7 @@ export function DashboardShell({
       : '15rem';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background overflow-x-hidden">
       {/* Mobile backdrop */}
       {isMobile && mobileOpen && (
         <div
@@ -82,7 +82,7 @@ export function DashboardShell({
 
       {/* Main content */}
       <div
-        className="transition-all duration-300"
+        className="transition-all duration-300 min-h-[100dvh] flex flex-col max-w-full"
         style={{ marginLeft: isMobile ? '0' : sidebarWidth }}
       >
         <AppHeader
@@ -90,7 +90,9 @@ export function DashboardShell({
           onMenuClick={() => setMobileOpen(true)}
           showMenuButton={isMobile}
         />
-        <main className="p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6 overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

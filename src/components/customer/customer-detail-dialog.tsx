@@ -331,7 +331,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
       {/* 图片预览 */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]"
           onClick={() => setPreviewImage(null)}
         >
           <button
@@ -351,7 +351,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customer }: CustomerD
 
       {/* 重复图片确认对话框 */}
       {showDuplicateDialog && duplicateResult && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="bg-background rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold mb-2">
               {duplicateResult.duplicate === 'exact' ? '图片重复' : '发现相似图片'}

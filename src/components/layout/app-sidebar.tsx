@@ -30,11 +30,12 @@ export function AppSidebar({ title, items, collapsed, onToggle }: AppSidebarProp
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r border-border bg-sidebar transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-[100dvh] border-r border-border bg-sidebar transition-all duration-300',
+        'pb-[env(safe-area-inset-bottom)]',
         collapsed ? 'w-16' : 'w-60'
       )}
     >
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className="flex min-h-14 items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
         {!collapsed ? (
           <Link href={title.includes('管理员') ? '/admin' : '/employee'} className="flex items-center gap-2">
             <img src="/icon-192x192.png" alt="鸿信ERP" className="h-8 w-8 rounded-lg" />

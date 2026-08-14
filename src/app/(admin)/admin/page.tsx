@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, TrendingUp, Trophy } from 'lucide-react';
+import { Users, Building2, TrendingUp, Trophy, ArrowRight } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employee-avatar';
 import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ interface TeamStat {
 
 interface AdminStats {
   teams: TeamStat[];
+  today_transitions?: { A_to_B: number; B_to_C: number; C_to_D: number };
 }
 
 export default function AdminDashboard() {
@@ -194,6 +195,34 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 今日客户转化 */}
+      {stats?.today_transitions && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">今日客户转化</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                <ArrowRight className="h-4 w-4 text-blue-600" />
+                <span className="text-sm">A → B:</span>
+                <span className="font-bold text-blue-700">{stats.today_transitions.A_to_B}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-cyan-50 rounded-lg">
+                <ArrowRight className="h-4 w-4 text-cyan-600" />
+                <span className="text-sm">B → C:</span>
+                <span className="font-bold text-cyan-700">{stats.today_transitions.B_to_C}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-lg">
+                <ArrowRight className="h-4 w-4 text-emerald-600" />
+                <span className="text-sm">C → D:</span>
+                <span className="font-bold text-emerald-700">{stats.today_transitions.C_to_D}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 团队详情 */}
       {stats?.teams && stats.teams.length > 0 ? (

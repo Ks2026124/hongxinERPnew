@@ -51,6 +51,13 @@ export async function GET(request: NextRequest) {
       .select('employee_id, team_id, customer_level')
       .in('team_id', teamIds);
 
+    // 获取今日等级变化记录
+    const { data: todayTransitions } = await supabase
+      .from('customer_level_logs')
+      .select('from_level, to_level')
+      .gte('created_at', todayStr + 'T00:00:00')
+      .lte('created_at', todayStr + 'T23:59:59');
+
     // 统计
     const teamTodayMap: Record<number, number> = {};
     const teamTotalMap: Record<number, number> = {};
@@ -110,7 +117,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, data: { teams: teamStats } });
+    // 统计今日转化
+    const transitions = {
+      A_to_B: 0, B_to_C: 0, C_to_D: 0,
+    };
+    for (const log of todayTransitions || []) {
+      if (log.from_level === 'A' && log.to_level === 'B') transitions.A_to_B++;
+      if (log.from_level === 'B' && log.to_level === 'C') transitions.B_to_C++;
+      if (log.from_level === 'C' && log.to_level === 'D') transitions.C_to_D++;
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: { 
+        teams: teamStats,
+        today_transitions: transitions,
+      } 
+    });
   } catch (err) {
     console.error('获取管理员统计异常:', err);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });

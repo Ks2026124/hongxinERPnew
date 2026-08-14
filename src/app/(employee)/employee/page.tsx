@@ -19,6 +19,15 @@ interface EmployeeStats {
     created_at: string;
   }>;
   level_counts: LevelStats;
+  today_new_levels: LevelStats;
+  transitions: {
+    A_to_B: number; B_to_C: number; C_to_D: number;
+    A_to_C: number; A_to_D: number; B_to_D: number;
+  };
+  today_transitions: {
+    A_to_B: number; B_to_C: number; C_to_D: number;
+    A_to_C: number; A_to_D: number; B_to_D: number;
+  };
 }
 
 interface LevelStats {
@@ -180,6 +189,7 @@ export default function EmployeeDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-blue-700">{stats?.level_counts?.A ?? 0}</div>
             <p className="text-xs text-blue-600 mt-1">新增客户</p>
+            <p className="text-xs text-blue-500 mt-1">今日 +{stats?.today_new_levels?.A ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -191,6 +201,7 @@ export default function EmployeeDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-green-700">{stats?.level_counts?.B ?? 0}</div>
             <p className="text-xs text-green-600 mt-1">深聊客户</p>
+            <p className="text-xs text-green-500 mt-1">今日 +{stats?.today_new_levels?.B ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -202,6 +213,7 @@ export default function EmployeeDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-orange-700">{stats?.level_counts?.C ?? 0}</div>
             <p className="text-xs text-orange-600 mt-1">付费意向</p>
+            <p className="text-xs text-orange-500 mt-1">今日 +{stats?.today_new_levels?.C ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -213,9 +225,63 @@ export default function EmployeeDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-purple-700">{stats?.level_counts?.D ?? 0}</div>
             <p className="text-xs text-purple-600 mt-1">成交客户</p>
+            <p className="text-xs text-purple-500 mt-1">今日 +{stats?.today_new_levels?.D ?? 0}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* 今日客户变化 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            今日客户变化
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-blue-700">A类</p>
+              <div className="text-sm space-y-1">
+                <p className="text-green-600">新增 +{stats?.today_new_levels?.A ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.A_to_B ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.A ?? 0}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-green-700">B类</p>
+              <div className="text-sm space-y-1">
+                <p className="text-blue-600">转入 +{stats?.today_transitions?.A_to_B ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.B_to_C ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.B ?? 0}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-orange-700">C类</p>
+              <div className="text-sm space-y-1">
+                <p className="text-green-600">转入 +{stats?.today_transitions?.B_to_C ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.C_to_D ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.C ?? 0}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-purple-700">D类</p>
+              <div className="text-sm space-y-1">
+                <p className="text-green-600">转入 +{stats?.today_transitions?.C_to_D ?? 0}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.D ?? 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-sm text-muted-foreground">今日转化</p>
+            <div className="flex gap-4 mt-2 text-sm">
+              <span className="text-blue-600">A→B: {stats?.today_transitions?.A_to_B ?? 0}</span>
+              <span className="text-green-600">B→C: {stats?.today_transitions?.B_to_C ?? 0}</span>
+              <span className="text-orange-600">C→D: {stats?.today_transitions?.C_to_D ?? 0}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 我的团队客户业绩 */}
       {teamPerformance?.my_team_rank && (

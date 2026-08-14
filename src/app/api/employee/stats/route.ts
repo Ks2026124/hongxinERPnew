@@ -80,6 +80,45 @@ export async function GET() {
       });
     }
 
+    // 7. 今日新增客户 A/B/C/D 统计（按创建时的等级）
+    const { data: todayLevelStats } = await supabase
+      .from('customers')
+      .select('customer_level')
+      .eq('employee_id', user.userId)
+      .gte('created_at', todayStr + 'T00:00:00')
+      .lte('created_at', todayStr + 'T23:59:59');
+
+    const todayNewLevels = { A: 0, B: 0, C: 0, D: 0 };
+    if (todayLevelStats) {
+      todayLevelStats.forEach((c: { customer_level: string }) => {
+        const level = c.customer_level as 'A' | 'B' | 'C' | 'D';
+        if (level in todayNewLevels) {
+          todayNewLevels[level]++;
+        }
+      });
+    }
+
+    // 8. 今日等级转化统计（从 customer_level_logs 表）
+    const { data: todayChanges } = await supabase
+      .from('customer_level_logs')
+      .select('from_level, to_level')
+      .eq('employee_id', user.userId)
+      .gte('created_at', todayStr + 'T00:00:00')
+      .lte('created_at', todayStr + 'T23:59:59');
+
+    const transitions = {
+      A_to_B: 0, B_to_C: 0, C_to_D: 0,
+      A_to_C: 0, A_to_D: 0, B_to_D: 0,
+    };
+    if (todayChanges) {
+      todayChanges.forEach((c: { from_level: string; to_level: string }) => {
+        const key = `${c.from_level}_to_${c.to_level}` as keyof typeof transitions;
+        if (key in transitions) {
+          transitions[key]++;
+        }
+      });
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -89,6 +128,8 @@ export async function GET() {
         week_customers: weekCustomers || 0,
         recent_customers: recentCustomers || [],
         level_counts: levelCounts,
+        today_new_levels: todayNewLevels,
+        transitions: transitions,
       },
     });
   } catch (err) {

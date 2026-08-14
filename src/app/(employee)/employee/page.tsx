@@ -175,146 +175,155 @@ export default function EmployeeDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">工作台</h1>
-        <p className="text-muted-foreground mt-1">欢迎回来，查看您的工作数据</p>
+        <h1 className="text-xl lg:text-2xl font-bold">工作台</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">欢迎回来，查看您的工作数据</p>
       </div>
 
-      {/* 客户等级统计卡片 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">A类客户</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700">{stats?.level_counts?.A ?? 0}</div>
-            <p className="text-xs text-blue-600 mt-1">新增客户</p>
-            <p className="text-xs text-blue-500 mt-1">今日 +{stats?.today_new_levels?.A ?? 0}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-green-50 border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">B类客户</CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">{stats?.level_counts?.B ?? 0}</div>
-            <p className="text-xs text-green-600 mt-1">深聊客户</p>
-            <p className="text-xs text-green-500 mt-1">今日 +{stats?.today_new_levels?.B ?? 0}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-orange-50 border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-700">C类客户</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-700">{stats?.level_counts?.C ?? 0}</div>
-            <p className="text-xs text-orange-600 mt-1">付费意向</p>
-            <p className="text-xs text-orange-500 mt-1">今日 +{stats?.today_new_levels?.C ?? 0}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-purple-50 border-purple-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700">D类客户</CardTitle>
-            <Trophy className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-700">{stats?.level_counts?.D ?? 0}</div>
-            <p className="text-xs text-purple-600 mt-1">成交客户</p>
-            <p className="text-xs text-purple-500 mt-1">今日 +{stats?.today_new_levels?.D ?? 0}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 今日客户变化 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            今日客户变化
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-blue-700">A类</p>
-              <div className="text-sm space-y-1">
-                <p className="text-green-600">新增 +{stats?.today_new_levels?.A ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.A_to_B ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_counts?.A ?? 0}</p>
+      <div className="space-y-3 lg:space-y-4">
+        {/* 1. 我的团队（紧凑单行，手机端一行三列数据） */}
+        {teamPerformance?.my_team_rank && (
+          <Card className="border-primary/20 py-0">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-3 sm:gap-6">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground leading-tight">我的团队</p>
+                    <p className="text-sm font-semibold truncate max-w-[8rem] sm:max-w-none">
+                      {teamPerformance.my_team_rank.team_name}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="text-center">
+                    <p className="text-lg sm:text-xl font-bold text-primary leading-tight">
+                      {teamPerformance.my_team_rank.today_customers}
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">今日新增</p>
+                  </div>
+                  <div className="text-center border-x">
+                    <p className="text-lg sm:text-xl font-bold leading-tight">
+                      {teamPerformance.my_team_rank.total_customers}
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">累计客户</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg sm:text-xl font-bold text-yellow-600 leading-tight">
+                      #{teamPerformance.my_team_rank.rank}
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">团队排名</p>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-green-700">B类</p>
-              <div className="text-sm space-y-1">
-                <p className="text-blue-600">转入 +{stats?.today_transitions?.A_to_B ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.B_to_C ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_counts?.B ?? 0}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-orange-700">C类</p>
-              <div className="text-sm space-y-1">
-                <p className="text-green-600">转入 +{stats?.today_transitions?.B_to_C ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.C_to_D ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_counts?.C ?? 0}</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-purple-700">D类</p>
-              <div className="text-sm space-y-1">
-                <p className="text-green-600">转入 +{stats?.today_transitions?.C_to_D ?? 0}</p>
-                <p className="font-medium">当前 {stats?.level_counts?.D ?? 0}</p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">今日转化</p>
-            <div className="flex gap-4 mt-2 text-sm">
-              <span className="text-blue-600">A→B: {stats?.today_transitions?.A_to_B ?? 0}</span>
-              <span className="text-green-600">B→C: {stats?.today_transitions?.B_to_C ?? 0}</span>
-              <span className="text-orange-600">C→D: {stats?.today_transitions?.C_to_D ?? 0}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* 我的团队客户业绩 */}
-      {teamPerformance?.my_team_rank && (
-        <Card className="border-2 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              我的团队
+        {/* 2. 客户等级统计（PC 四列紧凑卡片，手机 2×2） */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {([
+            { key: 'A', label: 'A类客户', sub: '新增客户', color: 'blue', Icon: Users },
+            { key: 'B', label: 'B类客户', sub: '深聊客户', color: 'green', Icon: Users },
+            { key: 'C', label: 'C类客户', sub: '付费意向', color: 'orange', Icon: TrendingUp },
+            { key: 'D', label: 'D类客户', sub: '成交客户', color: 'purple', Icon: Trophy },
+          ] as const).map(({ key, label, sub, color, Icon }) => {
+            const colorMap: Record<string, { card: string; num: string; sub: string; today: string; icon: string }> = {
+              blue:   { card: 'bg-blue-50/60 border-blue-200',   num: 'text-blue-700',   sub: 'text-blue-600/80',   today: 'text-blue-600',   icon: 'text-blue-600' },
+              green:  { card: 'bg-green-50/60 border-green-200', num: 'text-green-700',  sub: 'text-green-600/80',  today: 'text-green-600',  icon: 'text-green-600' },
+              orange: { card: 'bg-orange-50/60 border-orange-200', num: 'text-orange-700', sub: 'text-orange-600/80', today: 'text-orange-600', icon: 'text-orange-600' },
+              purple: { card: 'bg-purple-50/60 border-purple-200', num: 'text-purple-700', sub: 'text-purple-600/80', today: 'text-purple-600', icon: 'text-purple-600' },
+            };
+            const c = colorMap[color];
+            const count = stats?.level_counts?.[key] ?? 0;
+            const today = stats?.today_new_levels?.[key] ?? 0;
+            return (
+              <Card key={key} className={c.card}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-xs sm:text-sm font-medium ${c.num}`}>{label}</p>
+                      <p className={`text-[11px] sm:text-xs ${c.sub} truncate`}>{sub}</p>
+                    </div>
+                    <Icon className={`h-4 w-4 ${c.icon} shrink-0`} />
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className={`text-2xl sm:text-3xl font-bold leading-none ${c.num}`}>{count}</span>
+                    <span className={`text-[11px] sm:text-xs ${c.today}`}>今日 +{today}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* 3. 今日客户变化（PC 四列紧凑，手机纵向列表） */}
+        <Card>
+          <CardHeader className="pb-2 px-4 sm:px-6 pt-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              今日客户变化
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {teamPerformance.my_team_rank.team_name} - 客户业绩
-            </p>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary">{teamPerformance.my_team_rank.today_customers}</p>
-                <p className="text-sm text-muted-foreground mt-1">今日新增</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold">{teamPerformance.my_team_rank.total_customers}</p>
-                <p className="text-sm text-muted-foreground mt-1">累计客户</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-yellow-600">#{teamPerformance.my_team_rank.rank}</p>
-                <p className="text-sm text-muted-foreground mt-1">团队排名</p>
-              </div>
+          <CardContent className="px-4 sm:px-6 pb-4 pt-0">
+            {/* PC：横向四列，每个等级一行 */}
+            <div className="hidden lg:grid grid-cols-4 gap-3">
+              {([
+                { key: 'A', color: 'blue',   in: stats?.today_new_levels?.A ?? 0,                                          out: stats?.today_transitions?.A_to_B ?? 0 },
+                { key: 'B', color: 'green',  in: stats?.today_transitions?.A_to_B ?? 0,                                  out: stats?.today_transitions?.B_to_C ?? 0 },
+                { key: 'C', color: 'orange', in: stats?.today_transitions?.B_to_C ?? 0,                                  out: stats?.today_transitions?.C_to_D ?? 0 },
+                { key: 'D', color: 'purple', in: stats?.today_transitions?.C_to_D ?? 0,                                  out: 0 },
+              ] as const).map(({ key, color, in: inn, out }) => {
+                const map: Record<string,string> = {
+                  blue:'border-blue-200 text-blue-700 bg-blue-50/40',
+                  green:'border-green-200 text-green-700 bg-green-50/40',
+                  orange:'border-orange-200 text-orange-700 bg-orange-50/40',
+                  purple:'border-purple-200 text-purple-700 bg-purple-50/40',
+                };
+                return (
+                  <div key={key} className={`rounded-md border px-3 py-2 ${map[color]}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">{key}类</span>
+                      <span className="text-sm font-bold">当前 {stats?.level_counts?.[key] ?? 0}</span>
+                    </div>
+                    <div className="mt-1 flex gap-3 text-xs">
+                      <span className="text-green-600">入 +{inn}</span>
+                      {out > 0 && <span className="text-orange-600">出 -{out}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* 手机：纵向紧凑列表 */}
+            <div className="lg:hidden divide-y">
+              {([
+                { key: 'A', color: 'text-blue-700',   in: stats?.today_new_levels?.A ?? 0,        out: stats?.today_transitions?.A_to_B ?? 0 },
+                { key: 'B', color: 'text-green-700',  in: stats?.today_transitions?.A_to_B ?? 0,  out: stats?.today_transitions?.B_to_C ?? 0 },
+                { key: 'C', color: 'text-orange-700', in: stats?.today_transitions?.B_to_C ?? 0,  out: stats?.today_transitions?.C_to_D ?? 0 },
+                { key: 'D', color: 'text-purple-700', in: stats?.today_transitions?.C_to_D ?? 0,  out: 0 },
+              ] as const).map(({ key, color, in: inn, out }) => (
+                <div key={key} className="flex items-center justify-between py-2 text-sm">
+                  <span className={`font-semibold ${color}`}>{key}类</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-green-600">入 +{inn}</span>
+                    {out > 0 ? <span className="text-orange-600">出 -{out}</span> : <span className="text-muted-foreground/50">出 -0</span>}
+                    <span className="font-medium text-foreground min-w-[3.5rem] text-right">当前 {stats?.level_counts?.[key] ?? 0}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>今日转化</span>
+              <span className="text-blue-600">A→B {stats?.today_transitions?.A_to_B ?? 0}</span>
+              <span className="text-green-600">B→C {stats?.today_transitions?.B_to_C ?? 0}</span>
+              <span className="text-orange-600">C→D {stats?.today_transitions?.C_to_D ?? 0}</span>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {/* 团队客户排行榜 */}
       {teamPerformance?.all_teams && teamPerformance.all_teams.length > 0 && (

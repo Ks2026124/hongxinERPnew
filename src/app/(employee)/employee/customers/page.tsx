@@ -30,6 +30,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Edit, Trash2, Users, Phone, Eye, Upload, CheckCircle, XCircle, Loader2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { CustomerDetailDialog } from '@/components/customer/customer-detail-dialog';
 
@@ -106,6 +113,27 @@ export default function EmployeeCustomersPage() {
       console.error('获取客户列表失败:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 修改客户等级
+  const handleLevelChange = async (customerId: number, newLevel: 'A' | 'B' | 'C' | 'D') => {
+    try {
+      const res = await fetch(`/api/employee/customers/${customerId}/level`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_level: newLevel }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // 更新本地列表
+        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, customer_level: newLevel } : c));
+      } else {
+        setMessage(data.error || '等级修改失败');
+      }
+    } catch (err) {
+      console.error('等级修改失败:', err);
+      setMessage('网络错误，请重试');
     }
   };
 
@@ -442,9 +470,21 @@ export default function EmployeeCustomersPage() {
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.customer_name}</TableCell>
                     <TableCell>
-                      <span className={`text-xs px-2 py-1 rounded ${levelConfig.color}`}>
-                        {levelConfig.label}
-                      </span>
+                      <Select
+                        value={level}
+                        onValueChange={(v) => handleLevelChange(customer.id, v as 'A' | 'B' | 'C' | 'D')}
+                      >
+                        <SelectTrigger className={`w-20 h-8 text-xs ${levelConfig.color} border-0`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(CUSTOMER_LEVEL_CONFIG) as Array<'A'|'B'|'C'|'D'>).map(l => (
+                            <SelectItem key={l} value={l} className="text-xs">
+                              {CUSTOMER_LEVEL_CONFIG[l].label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                   <TableCell>
                     {customer.phone ? (

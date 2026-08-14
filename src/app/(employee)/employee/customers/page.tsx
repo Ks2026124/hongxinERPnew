@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Users, Phone, Eye, Upload, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Phone, Eye, Upload, CheckCircle, XCircle, Loader2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { CustomerDetailDialog } from '@/components/customer/customer-detail-dialog';
 
 interface Customer {
@@ -71,6 +71,18 @@ export default function EmployeeCustomersPage() {
   const [message, setMessage] = useState('');
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
+  // 客户查重状态
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    checking: boolean;
+    isDuplicate: boolean;
+    duplicateCustomer?: {
+      customer_name: string;
+      employee_name: string;
+      team_name: string;
+      customer_level: 'A' | 'B' | 'C' | 'D';
+    };
+  }>({ checking: false, isDuplicate: false });
+
   // 微信截图验证状态
   const [verifyStep, setVerifyStep] = useState<VerifyStep>('upload');
   const [verifyFile, setVerifyFile] = useState<File | null>(null);
@@ -97,7 +109,40 @@ export default function EmployeeCustomersPage() {
     }
   };
 
+  // 客户查重（基于微信号/手机号）
+  const checkDuplicate = async (wechatId: string, phone: string) => {
+    if (!wechatId && !phone) {
+      setDuplicateCheck({ checking: false, isDuplicate: false });
+      return;
+    }
+    setDuplicateCheck({ checking: true, isDuplicate: false });
+    try {
+      const res = await fetch('/api/employee/customers/check-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wechat_id: wechatId, phone: phone }),
+      });
+      const data = await res.json();
+      if (data.success && data.data.is_duplicate) {
+        setDuplicateCheck({
+          checking: false,
+          isDuplicate: true,
+          duplicateCustomer: data.data.customer,
+        });
+      } else {
+        setDuplicateCheck({ checking: false, isDuplicate: false });
+      }
+    } catch {
+      setDuplicateCheck({ checking: false, isDuplicate: false });
+    }
+  };
+
   const handleAdd = async () => {
+    // 如果检测到重复，阻止提交
+    if (duplicateCheck.isDuplicate) {
+      setMessage('该客户已存在，无法重复创建');
+      return;
+    }
     if (!formData.customer_name.trim()) {
       setMessage('客户姓名不能为空');
       return;
@@ -109,6 +154,17 @@ export default function EmployeeCustomersPage() {
     setSubmitting(true);
     setMessage('');
     try {
+      // 先进行客户查重
+      if (formData.wechat_id || formData.phone) {
+        const checkRes = await fetch(`/api/employee/customers/check-duplicate?wechat_id=${encodeURIComponent(formData.wechat_id)}&phone=${encodeURIComponent(formData.phone)}`);
+        const checkData = await checkRes.json();
+        if (checkData.exists) {
+          alert(`该客户已存在！\n\n客户姓名：${checkData.customer?.name}\n所属员工：${checkData.customer?.employee_name || '未知'}\n所属团队：${checkData.customer?.team_name || '未知'}\n当前等级：${checkData.customer?.customer_level || 'A'}类\n\n禁止重复创建。`);
+          setSubmitting(false);
+          return;
+        }
+      }
+      
       const res = await fetch('/api/employee/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -567,6 +623,7 @@ export default function EmployeeCustomersPage() {
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onBlur={(e) => checkDuplicate(e.target.value, formData.phone)}
                   placeholder="请输入手机号"
                 />
               </div>
@@ -575,9 +632,32 @@ export default function EmployeeCustomersPage() {
                 <Input
                   value={formData.wechat_id}
                   onChange={(e) => setFormData({ ...formData, wechat_id: e.target.value })}
+                  onBlur={(e) => checkDuplicate(e.target.value, formData.phone)}
                   placeholder="请输入微信号"
                 />
               </div>
+
+              {/* 客户查重提示 */}
+              {duplicateCheck.isDuplicate && (
+                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-center gap-2 text-destructive font-medium text-sm mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    该客户已存在
+                  </div>
+                  <div className="text-sm space-y-1 text-muted-foreground">
+                    <p>客户姓名：{duplicateCheck.duplicateCustomer?.customer_name}</p>
+                    <p>所属员工：{duplicateCheck.duplicateCustomer?.employee_name}</p>
+                    <p>所属团队：{duplicateCheck.duplicateCustomer?.team_name}</p>
+                    <p>当前等级：{duplicateCheck.duplicateCustomer?.customer_level}类客户</p>
+                  </div>
+                </div>
+              )}
+              {duplicateCheck.checking && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  正在检查客户是否已存在...
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>备注</Label>
                 <Textarea

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { EmployeeAvatar } from '@/components/employee-avatar';
+import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 import {
   Select,
   SelectContent,
@@ -89,6 +91,16 @@ export default function AdminCustomersPage() {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [showImageGallery, setShowImageGallery] = useState(false);
+
+  // 获取客户关联的员工 ID 列表
+  const customerEmployeeIds = useMemo(() => {
+    const ids = customers
+      .map(c => c.employee?.id)
+      .filter((id): id is number => id != null);
+    return [...new Set(ids)];
+  }, [customers]);
+
+  const { avatarMap } = useEmployeeAvatars(customerEmployeeIds);
 
   useEffect(() => {
     fetchTeams();
@@ -369,9 +381,22 @@ export default function AdminCustomersPage() {
                   <TableCell>{customer.phone || '-'}</TableCell>
                   <TableCell>{customer.wechat_id || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">
-                      {customer.employee?.name || '未知'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {customer.employee ? (
+                        <>
+                          <EmployeeAvatar 
+                            name={customer.employee.name} 
+                            src={avatarMap[customer.employee.id]} 
+                            size="xs"
+                          />
+                          <Badge variant="secondary">
+                            {customer.employee.name}
+                          </Badge>
+                        </>
+                      ) : (
+                        <Badge variant="outline">未知</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">

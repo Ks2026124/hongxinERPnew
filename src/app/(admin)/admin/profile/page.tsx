@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { EmployeeAvatar } from '@/components/employee-avatar';
 
 interface ProfileData {
   id: number;
@@ -21,10 +21,12 @@ interface ProfileData {
 
 export default function AdminProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProfile();
+    fetchAvatar();
   }, []);
 
   const fetchProfile = async () => {
@@ -38,6 +40,18 @@ export default function AdminProfilePage() {
       console.error('获取个人信息失败:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvatar = async () => {
+    try {
+      const res = await fetch('/api/employee/profile/avatar');
+      const data = await res.json();
+      if (data.success && data.data.avatar_url) {
+        setAvatarUrl(data.data.avatar_url);
+      }
+    } catch (err) {
+      console.error('获取头像失败:', err);
     }
   };
 
@@ -72,11 +86,11 @@ export default function AdminProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="text-lg">
-                  {profile.name?.charAt(0) || profile.username?.charAt(0) || 'A'}
-                </AvatarFallback>
-              </Avatar>
+              <EmployeeAvatar 
+                name={profile.name || profile.username} 
+                src={avatarUrl}
+                size="lg"
+              />
               <div>
                 <h3 className="text-lg font-semibold">{profile.name || profile.username}</h3>
                 <Badge variant="secondary" className="mt-1">

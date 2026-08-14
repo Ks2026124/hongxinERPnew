@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Image, Trophy, TrendingUp, Clock, Building2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { EmployeeAvatar } from '@/components/employee-avatar';
+import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 
 interface EmployeeStats {
   today_customers: number;
@@ -52,6 +53,15 @@ export default function EmployeeDashboard() {
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null);
   const [teamPerformance, setTeamPerformance] = useState<TeamPerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 获取团队成员 ID 列表
+  const memberIds = useMemo(() => 
+    teamStats?.members?.map(m => m.id) || [], 
+    [teamStats]
+  );
+  
+  // 批量获取团队成员头像
+  const { avatarMap } = useEmployeeAvatars(memberIds);
 
   useEffect(() => {
     fetchData();
@@ -273,10 +283,11 @@ export default function EmployeeDashboard() {
                     >
                       {index + 1}
                     </div>
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={member.avatar_url || ''} />
-                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <EmployeeAvatar 
+                      name={member.name} 
+                      src={avatarMap[member.id]} 
+                      size="md"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{member.name}</p>
                       <p className="text-xs text-muted-foreground">

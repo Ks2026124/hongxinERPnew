@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building2, TrendingUp, Trophy } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { EmployeeAvatar } from '@/components/employee-avatar';
+import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 import { Badge } from '@/components/ui/badge';
 
 interface TeamEmployee {
@@ -30,6 +31,15 @@ interface AdminStats {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 获取所有员工 ID
+  const allEmployeeIds = useMemo(() => {
+    if (!stats?.teams) return [];
+    return stats.teams.flatMap(t => t.employees.map(e => e.id));
+  }, [stats]);
+
+  // 批量获取员工头像
+  const { avatarMap } = useEmployeeAvatars(allEmployeeIds);
 
   useEffect(() => {
     fetchStats();
@@ -154,10 +164,11 @@ export default function AdminDashboard() {
                         >
                           {index + 1}
                         </div>
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={emp.avatar_url || ''} />
-                          <AvatarFallback className="text-xs">{emp.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <EmployeeAvatar 
+                          name={emp.name} 
+                          src={avatarMap[emp.id]} 
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{emp.name}</p>
                         </div>

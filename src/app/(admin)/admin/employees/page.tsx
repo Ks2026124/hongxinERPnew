@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -17,6 +17,8 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmployeeAvatar } from '@/components/employee-avatar';
+import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 import {
   Table,
   TableBody,
@@ -80,6 +82,10 @@ export default function AdminEmployeesPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // 获取员工 ID 列表用于批量获取头像
+  const employeeIds = useMemo(() => employees.map(e => e.id), [employees]);
+  const { avatarMap } = useEmployeeAvatars(employeeIds);
 
   // 修改团队对话框
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
@@ -573,7 +579,14 @@ export default function AdminEmployeesPage() {
                     return (
                       <TableRow key={employee.id} className={isDeleted ? 'opacity-50' : ''}>
                         <TableCell className="font-medium">
-                          {employee.name}{isDeleted && ' (已删除)'}
+                          <div className="flex items-center gap-2">
+                            <EmployeeAvatar 
+                              name={employee.name} 
+                              src={avatarMap[employee.id]} 
+                              size="sm"
+                            />
+                            <span>{employee.name}{isDeleted && ' (已删除)'}</span>
+                          </div>
                         </TableCell>
                         <TableCell>{employee.username}</TableCell>
                         <TableCell className="hidden md:table-cell">

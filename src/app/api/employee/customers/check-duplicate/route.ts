@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
         created_at,
         employee_id,
         team_id,
-        employee:profiles!customers_employee_id_fkey(id, name, username),
-        team:teams!customers_team_id_fkey(id, team_name, team_code)
+        employee:profiles!customers_employee_id_profiles_id_fk(id, name, username),
+        team:teams!customers_team_id_teams_id_fk(id, team_name, team_code)
       `);
 
     // 根据微信号或手机号查询

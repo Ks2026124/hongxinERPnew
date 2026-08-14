@@ -355,48 +355,59 @@ export default function AdminDashboard() {
                       <div key={emp.id} className="rounded-lg border bg-card">
                         <button
                           type="button"
-                          className="flex w-full items-start md:items-center gap-3 p-3 md:p-4 text-left hover:bg-muted/30 rounded-lg"
+                          className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[auto_auto] md:grid-rows-1 items-center gap-x-3 gap-y-2 p-3 md:p-4 text-left hover:bg-muted/30 rounded-lg"
                           onClick={() => toggleEmployee(emp.id)}
                         >
-                          <div className={`w-7 h-7 mt-1 md:mt-0 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getRankStyle(index)}`}>
-                            {index + 1}
-                          </div>
-                          <EmployeeAvatar name={emp.name} src={avatarMap[emp.id]} size="sm" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                          {/* 左侧：排名 + 头像 + 姓名 + 今日/累计 */}
+                          <div className="col-span-3 md:col-span-1 flex items-center gap-2.5 min-w-0">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getRankStyle(index)}`}>
+                              {index + 1}
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0 overflow-hidden">
+                              {avatarMap[emp.id] ? (
+                                <img src={avatarMap[emp.id] ?? undefined} alt={emp.name} className="w-full h-full object-cover" />
+                              ) : (
+                                (emp.name || '?').charAt(0)
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{emp.name}</p>
-                              <span className="text-xs text-muted-foreground shrink-0">今日 +{emp.today_customers}</span>
-                              <span className="text-xs text-muted-foreground shrink-0">累计 {emp.total_customers}</span>
+                              <p className="text-xs text-muted-foreground truncate">
+                                今日 <span className="text-foreground font-medium">+{emp.today_customers}</span>
+                                <span className="mx-1.5 text-border">|</span>
+                                累计 <span className="text-foreground font-medium">{emp.total_customers}</span>
+                              </p>
                             </div>
-
-                            {/* 手机端：客户等级独立卡片，靠右 */}
-                            <div className="md:hidden mt-2 flex flex-wrap justify-end gap-2">
-                              {lvChips.map(c => (
-                                <div key={c.key} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${c.chip}`}>
-                                  <span className="text-base font-bold leading-none">{c.label}</span>
-                                  <span className={`text-lg font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* PC 端：保留展开后的明细表头行，避免破坏 */}
                           </div>
 
-                          {/* PC 端：客户等级作为独立卡片，靠右 */}
-                          <div className="hidden md:flex items-center gap-2 shrink-0">
-                            <span className="text-xs text-muted-foreground mr-1">客户等级</span>
+                          {/* 中间（PC 占位，手机隐藏） */}
+                          <div className="hidden md:block" />
+
+                          {/* 右侧：A/B/C/D 等级 + 明细按钮（PC 单行） */}
+                          <div className="col-span-3 md:col-span-1 flex flex-wrap md:flex-nowrap items-center justify-end gap-2 md:gap-1.5 min-w-0">
                             {lvChips.map(c => (
-                              <div key={c.key} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${c.chip}`}>
-                                <span className="text-base font-bold leading-none">{c.label}</span>
-                                <span className={`text-lg font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
-                                <span className={`text-[11px] leading-none ${c.sub}`}>+{emp.today_level_stats?.[c.key] ?? 0}</span>
+                              <div
+                                key={c.key}
+                                className={`flex items-baseline gap-1 px-2.5 py-1.5 md:px-2 md:py-1 rounded-md border whitespace-nowrap ${c.chip}`}
+                              >
+                                <span className="text-xs md:text-[13px] font-bold leading-none">{c.label}</span>
+                                <span className={`text-sm md:text-base font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
+                                <span className={`hidden md:inline text-[10px] leading-none ${c.sub}`}>
+                                  +{emp.today_level_stats?.[c.key] ?? 0}
+                                </span>
                               </div>
                             ))}
+                            <span className="hidden md:inline-flex items-center text-xs text-muted-foreground shrink-0 ml-1">
+                              {expandedEmployees.has(emp.id) ? '收起' : '明细'}
+                            </span>
                           </div>
 
-                          <span className="text-xs text-muted-foreground hidden md:inline shrink-0">
-                            {expandedEmployees.has(emp.id) ? '收起' : '明细'}
-                          </span>
+                          {/* 手机端：明细按钮独占一行靠右 */}
+                          <div className="col-span-3 md:hidden flex justify-end">
+                            <span className="text-xs text-muted-foreground">
+                              {expandedEmployees.has(emp.id) ? '收起明细 ▲' : '查看明细 ▼'}
+                            </span>
+                          </div>
                         </button>
                         {expandedEmployees.has(emp.id) && (
                           <div className="border-t p-3 bg-muted/20 space-y-3 text-xs">

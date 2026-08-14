@@ -7,6 +7,7 @@ export const maxDuration = 30;
 
 type DuplicatePayload = {
   wechat_id?: string;
+  wechat?: string;
   phone?: string;
 };
 
@@ -19,34 +20,13 @@ type CustomerRow = {
   created_at: string;
   employee_id: number;
   team_id: number;
-  employee?: { id: number; name: string; username: string } | { id: number; name: string; username: string }[] | null;
-  team?: { id: number; team_name: string; team_code: string } | { id: number; team_name: string; team_code: string }[] | null;
 };
 
-function buildResponse(row: CustomerRow | null) {
-  if (!row) {
-    return NextResponse.json({ exists: false, customer: null });
-  }
-  const employee = Array.isArray(row.employee) ? row.employee[0] : row.employee;
-  const team = Array.isArray(row.team) ? row.team[0] : row.team;
-  return NextResponse.json({
-    exists: true,
-    customer: {
-      id: row.id,
-      customer_name: row.customer_name,
-      phone: row.phone,
-      wechat_id: row.wechat_id,
-      customer_level: row.customer_level,
-      created_at: row.created_at,
-      employee_name: employee?.name || employee?.username || '未知',
-      team_name: team?.team_name || '未知',
-      team_code: team?.team_code || '',
-    },
-  });
-}
+type ProfileRow = { id: number; name: string | null; username: string | null };
+type TeamRow = { id: number; team_name: string; team_code: string | null };
 
 async function runCheck(payload: DuplicatePayload) {
-  const wechatId = (payload.wechat_id || '').trim();
+  const wechatId = (payload.wechat_id || payload.wechat || '').trim();
   const phone = (payload.phone || '').trim();
 
   if (!wechatId && !phone) {
@@ -62,18 +42,17 @@ async function runCheck(payload: DuplicatePayload) {
   if (wechatId) orClauses.push(`wechat_id.eq.${wechatId}`);
   if (phone) orClauses.push(`phone.eq.${phone}`);
 
+  // 第一步：只查 customers 表单表（不使用任何外键 embed，避免 PGRST200）
   const { data, error } = await supabase
     .from('customers')
     .select(
-      `id, customer_name, phone, wechat_id, customer_level, created_at, employee_id, team_id,
-       employee:profiles!customers_employee_id_profiles_id_fk(id, name, username),
-       team:teams!customers_team_id_teams_id_fk(id, team_name, team_code)`
+      'id, customer_name, phone, wechat_id, customer_level, created_at, employee_id, team_id'
     )
     .or(orClauses.join(','))
     .limit(1);
 
   if (error) {
-    console.error('[CUSTOMER_CHECK_DUPLICATE] 查询失败:', {
+    console.error('[CUSTOMER_CHECK_DUPLICATE] customers 查询失败:', {
       code: error.code,
       message: error.message,
       details: error.details,
@@ -86,7 +65,64 @@ async function runCheck(payload: DuplicatePayload) {
   }
 
   const row = (data && data[0]) as CustomerRow | undefined;
-  return buildResponse(row || null);
+  if (!row) {
+    return NextResponse.json({ exists: false, customer: null });
+  }
+
+  // 第二步：单独查询员工姓名和团队名称（避免 PostgREST embed 关系问题）
+  let employeeName = '未知';
+  let teamName = '未知';
+  let teamCode = '';
+
+  const [{ data: emp, error: empErr }, { data: team, error: teamErr }] =
+    await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, name, username')
+        .eq('id', row.employee_id)
+        .maybeSingle<ProfileRow | null>(),
+      supabase
+        .from('teams')
+        .select('id, team_name, team_code')
+        .eq('id', row.team_id)
+        .maybeSingle<TeamRow | null>(),
+    ]);
+
+  if (empErr) {
+    console.error('[CUSTOMER_CHECK_DUPLICATE] profiles 查询失败:', {
+      code: empErr.code,
+      message: empErr.message,
+    });
+  }
+  if (teamErr) {
+    console.error('[CUSTOMER_CHECK_DUPLICATE] teams 查询失败:', {
+      code: teamErr.code,
+      message: teamErr.message,
+    });
+  }
+
+  if (emp) {
+    employeeName = emp.name || emp.username || '未知';
+  }
+  if (team) {
+    teamName = team.team_name || '未知';
+    teamCode = team.team_code || '';
+  }
+
+  return NextResponse.json({
+    exists: true,
+    customer: {
+      id: row.id,
+      customer_name: row.customer_name,
+      phone: row.phone,
+      wechat_id: row.wechat_id,
+      customer_level: row.customer_level,
+      created_at: row.created_at,
+      employee_name: employeeName,
+      team_name: teamName,
+      team_code: teamCode,
+    },
+  });
 }
 
 export async function POST(req: Request) {

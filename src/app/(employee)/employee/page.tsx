@@ -478,78 +478,83 @@ export default function EmployeeDashboard() {
                           // 当前登录员工在自己的团队中高亮显示
                           const isCurrentUser = team.team_id === allTeamsData?.my_team_id && 
                             member.name === teamStats?.members.find(m => m.id === member.id)?.name;
+                          const lv = member.total_levels ?? { A: 0, B: 0, C: 0, D: 0 };
+                          const levelBadges: Array<{ key: 'A' | 'B' | 'C' | 'D'; label: string; chip: string; num: string }> = [
+                            { key: 'A', label: 'A', chip: 'bg-blue-50 text-blue-700 border-blue-200',     num: 'text-blue-700' },
+                            { key: 'B', label: 'B', chip: 'bg-green-50 text-green-700 border-green-200', num: 'text-green-700' },
+                            { key: 'C', label: 'C', chip: 'bg-orange-50 text-orange-700 border-orange-200', num: 'text-orange-700' },
+                            { key: 'D', label: 'D', chip: 'bg-red-50 text-red-700 border-red-200',     num: 'text-red-700' },
+                          ];
                           return (
                             <div
                               key={member.id}
-                              className={`p-3 rounded-lg border ${
-                                isCurrentUser 
-                                  ? 'bg-primary/5 border-primary/20' 
+                              className={`p-3 md:p-4 rounded-lg border ${
+                                isCurrentUser
+                                  ? 'bg-primary/5 border-primary/20'
                                   : 'bg-background/50 border-border/50'
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
-                                >
-                                  {index + 1}
-                                </div>
-                                <EmployeeAvatar 
-                                  name={member.name} 
-                                  src={avatarMap[member.id]} 
-                                  size="sm"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm truncate">{member.name}</p>
-                                    {isCurrentUser && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                                        我
-                                      </span>
-                                    )}
+                              {/* 第一行（PC）/ 手机端拆成上下两行：左侧身份，右侧等级卡片 */}
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div
+                                    className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                                  >
+                                    {index + 1}
                                   </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    累计 {member.total_customers} 位客户
-                                  </p>
+                                  <EmployeeAvatar
+                                    name={member.name}
+                                    src={avatarMap[member.id]}
+                                    size="sm"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm truncate">{member.name}</p>
+                                      {isCurrentUser && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                                          我
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      累计 {member.total_customers} 位客户
+                                    </p>
+                                  </div>
                                 </div>
+
+                                {/* 客户等级：PC 靠右；手机端独占一行并靠右 */}
+                                {member.total_levels && (
+                                  <div className="flex md:items-center gap-2 justify-end md:justify-end flex-wrap md:flex-nowrap md:shrink-0">
+                                    <span className="hidden md:inline text-xs text-muted-foreground mr-1">客户等级</span>
+                                    {levelBadges.map(b => (
+                                      <div
+                                        key={b.key}
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${b.chip}`}
+                                      >
+                                        <span className="text-base font-bold leading-none">{b.label}</span>
+                                        <span className={`text-lg font-bold leading-none ${b.num}`}>{lv[b.key]}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              
+
                               {/* 今日新增 A/B/C/D */}
                               {member.today_new_levels && (
-                                <div className="mt-2 pt-2 border-t border-border/30">
-                                  <p className="text-[10px] text-muted-foreground mb-1">今日新增</p>
-                                  <div className="flex gap-1.5 flex-wrap">
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
+                                <div className="mt-3 pt-2 border-t border-border/30">
+                                  <p className="text-[11px] text-muted-foreground mb-1.5">今日新增</p>
+                                  <div className="flex gap-2 flex-wrap justify-end md:justify-start">
+                                    <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-medium">
                                       A +{member.today_new_levels.A}
                                     </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
+                                    <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-medium">
                                       B +{member.today_new_levels.B}
                                     </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">
+                                    <span className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 font-medium">
                                       C +{member.today_new_levels.C}
                                     </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 font-medium">
+                                    <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium">
                                       D +{member.today_new_levels.D}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* 当前客户 A/B/C/D */}
-                              {member.total_levels && (
-                                <div className="mt-2">
-                                  <p className="text-[10px] text-muted-foreground mb-1">当前客户</p>
-                                  <div className="flex gap-1.5 flex-wrap">
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
-                                      A {member.total_levels.A}
-                                    </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
-                                      B {member.total_levels.B}
-                                    </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">
-                                      C {member.total_levels.C}
-                                    </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">
-                                      D {member.total_levels.D}
                                     </span>
                                   </div>
                                 </div>

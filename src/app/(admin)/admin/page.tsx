@@ -343,54 +343,61 @@ export default function AdminDashboard() {
               <CardContent>
                 {team.employees.length > 0 ? (
                   <div className="space-y-3">
-                    {team.employees.map((emp, index) => (
+                    {team.employees.map((emp, index) => {
+                      const lv = emp.level_stats ?? { A: 0, B: 0, C: 0, D: 0 };
+                      const lvChips: Array<{ key: 'A' | 'B' | 'C' | 'D'; label: string; chip: string; num: string; sub: string }> = [
+                        { key: 'A', label: 'A', chip: 'bg-blue-50 text-blue-700 border-blue-200',       num: 'text-blue-700',   sub: 'text-blue-500' },
+                        { key: 'B', label: 'B', chip: 'bg-green-50 text-green-700 border-green-200',   num: 'text-green-700', sub: 'text-green-500' },
+                        { key: 'C', label: 'C', chip: 'bg-orange-50 text-orange-700 border-orange-200', num: 'text-orange-700', sub: 'text-orange-500' },
+                        { key: 'D', label: 'D', chip: 'bg-red-50 text-red-700 border-red-200',         num: 'text-red-700',   sub: 'text-red-500' },
+                      ];
+                      return (
                       <div key={emp.id} className="rounded-lg border bg-card">
                         <button
                           type="button"
-                          className="flex w-full items-center gap-3 p-3 text-left hover:bg-muted/30 rounded-lg"
+                          className="flex w-full items-start md:items-center gap-3 p-3 md:p-4 text-left hover:bg-muted/30 rounded-lg"
                           onClick={() => toggleEmployee(emp.id)}
                         >
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getRankStyle(index)}`}>
+                          <div className={`w-7 h-7 mt-1 md:mt-0 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getRankStyle(index)}`}>
                             {index + 1}
                           </div>
                           <EmployeeAvatar name={emp.name} src={avatarMap[emp.id]} size="sm" />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
                               <p className="text-sm font-medium truncate">{emp.name}</p>
                               <span className="text-xs text-muted-foreground shrink-0">今日 +{emp.today_customers}</span>
                               <span className="text-xs text-muted-foreground shrink-0">累计 {emp.total_customers}</span>
                             </div>
-                            <div className="mt-1 grid grid-cols-4 gap-2 text-xs md:hidden">
-                              <span className="text-blue-600">A:{emp.level_stats?.A ?? 0}/+{emp.today_level_stats?.A ?? 0}</span>
-                              <span className="text-cyan-600">B:{emp.level_stats?.B ?? 0}/+{emp.today_level_stats?.B ?? 0}</span>
-                              <span className="text-amber-600">C:{emp.level_stats?.C ?? 0}/+{emp.today_level_stats?.C ?? 0}</span>
-                              <span className="text-emerald-600">D:{emp.level_stats?.D ?? 0}/+{emp.today_level_stats?.D ?? 0}</span>
+
+                            {/* 手机端：客户等级独立卡片，靠右 */}
+                            <div className="md:hidden mt-2 flex flex-wrap justify-end gap-2">
+                              {lvChips.map(c => (
+                                <div key={c.key} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${c.chip}`}>
+                                  <span className="text-base font-bold leading-none">{c.label}</span>
+                                  <span className={`text-lg font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
+                                </div>
+                              ))}
                             </div>
+
+                            {/* PC 端：保留展开后的明细表头行，避免破坏 */}
                           </div>
-                          <span className="text-xs text-muted-foreground hidden md:inline">
+
+                          {/* PC 端：客户等级作为独立卡片，靠右 */}
+                          <div className="hidden md:flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-muted-foreground mr-1">客户等级</span>
+                            {lvChips.map(c => (
+                              <div key={c.key} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${c.chip}`}>
+                                <span className="text-base font-bold leading-none">{c.label}</span>
+                                <span className={`text-lg font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
+                                <span className={`text-[11px] leading-none ${c.sub}`}>+{emp.today_level_stats?.[c.key] ?? 0}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <span className="text-xs text-muted-foreground hidden md:inline shrink-0">
                             {expandedEmployees.has(emp.id) ? '收起' : '明细'}
                           </span>
                         </button>
-                        <div className="hidden md:block border-t">
-                          <div className="grid grid-cols-[1.2fr_repeat(4,1fr)_0.8fr_0.8fr] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
-                            <span>员工</span>
-                            <span>A类 当前/期间</span>
-                            <span>B类 当前/期间</span>
-                            <span>C类 当前/期间</span>
-                            <span>D类 当前/期间</span>
-                            <span>今日新增</span>
-                            <span>累计客户</span>
-                          </div>
-                          <div className="grid grid-cols-[1.2fr_repeat(4,1fr)_0.8fr_0.8fr] gap-2 px-3 py-2 text-sm border-t">
-                            <span className="truncate font-medium">{emp.name}</span>
-                            <span className="text-blue-600">{emp.level_stats?.A ?? 0}/+{emp.today_level_stats?.A ?? 0}</span>
-                            <span className="text-cyan-600">{emp.level_stats?.B ?? 0}/+{emp.today_level_stats?.B ?? 0}</span>
-                            <span className="text-amber-600">{emp.level_stats?.C ?? 0}/+{emp.today_level_stats?.C ?? 0}</span>
-                            <span className="text-emerald-600">{emp.level_stats?.D ?? 0}/+{emp.today_level_stats?.D ?? 0}</span>
-                            <span>+{emp.today_customers}</span>
-                            <span>{emp.total_customers}</span>
-                          </div>
-                        </div>
                         {expandedEmployees.has(emp.id) && (
                           <div className="border-t p-3 bg-muted/20 space-y-3 text-xs">
                             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -414,7 +421,8 @@ export default function AdminDashboard() {
                           </div>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-4 text-sm text-muted-foreground">暂无员工数据</div>

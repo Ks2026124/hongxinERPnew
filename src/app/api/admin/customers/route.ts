@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
       .from('customers')
       .select(`
         *,
-        profiles(id, name, username),
-        teams(id, team_name, team_code)
+        employee:profiles(id, name, username),
+        team:teams(id, team_name, team_code)
       `)
       .order('created_at', { ascending: false });
 

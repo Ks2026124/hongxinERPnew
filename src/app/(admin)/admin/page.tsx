@@ -388,10 +388,10 @@ export default function AdminDashboard() {
                             {lvChips.map(c => (
                               <div
                                 key={c.key}
-                                className={`flex items-baseline gap-1 px-2.5 py-1.5 md:px-2 md:py-1 rounded-md border whitespace-nowrap ${c.chip}`}
+                                className={`flex items-baseline gap-1 px-3 py-1.5 rounded-md border whitespace-nowrap ${c.chip}`}
                               >
-                                <span className="text-xs md:text-[13px] font-bold leading-none">{c.label}</span>
-                                <span className={`text-sm md:text-base font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
+                                <span className="text-[15px] font-bold leading-none">{c.label}</span>
+                                <span className={`text-[15px] font-bold leading-none ${c.num}`}>{lv[c.key]}</span>
                                 <span className={`hidden md:inline text-[10px] leading-none ${c.sub}`}>
                                   +{emp.today_level_stats?.[c.key] ?? 0}
                                 </span>

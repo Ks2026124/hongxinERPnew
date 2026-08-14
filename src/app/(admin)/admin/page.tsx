@@ -40,8 +40,10 @@ interface AdminStats {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<string>('today');
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
 
-  // 获取所有员工 ID
   const [expandedEmployees, setExpandedEmployees] = useState<Set<number>>(new Set());
 
   const toggleEmployee = (id: number) => {
@@ -63,11 +65,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [dateRange, customStart, customEnd]);
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats');
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set('range', dateRange);
+      if (dateRange === 'custom') {
+        if (customStart) params.set('start', customStart);
+        if (customEnd) params.set('end', customEnd);
+      }
+      const res = await fetch(`/api/admin/stats?${params.toString()}`);
       const data = await res.json();
       if (data.success) setStats(data.data);
     } catch (err) {
@@ -123,6 +132,34 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold">管理员工作台</h1>
         <p className="text-muted-foreground mt-1">全局数据概览</p>
       </div>
+
+      <Card className="p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-medium">统计日期范围</p>
+            <p className="text-xs text-muted-foreground mt-1">今日新增与转化数据会随日期范围变化，当前客户数量保持实时统计</p>
+          </div>
+          <div className="flex flex-wrap gap-2 items-end">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="today">今天</option>
+              <option value="yesterday">昨天</option>
+              <option value="7d">近7天</option>
+              <option value="custom">自定义日期</option>
+            </select>
+            {dateRange === 'custom' && (
+              <>
+                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-9 rounded-md border border-border bg-background px-3 text-sm" />
+                <span className="text-sm text-muted-foreground">至</span>
+                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-9 rounded-md border border-border bg-background px-3 text-sm" />
+              </>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* 客户等级统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -255,92 +292,132 @@ export default function AdminDashboard() {
                   </CardTitle>
                   <Badge variant="outline">{team.team_code}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  今日新增 <span className="font-bold text-primary">{team.today_customers}</span> 位客户
-                  {' · '}累计 {team.total_customers} 位
-                </p>
-                {/* 客户等级统计 */}
-                {team.level_stats && (
-                  <div className="mt-2 space-y-2">
-                    <div className="flex gap-3 text-xs">
-                      <span className="text-blue-600">A: {team.level_stats.A}</span>
-                      <span className="text-cyan-600">B: {team.level_stats.B}</span>
-                      <span className="text-amber-600">C: {team.level_stats.C}</span>
-                      <span className="text-emerald-600">D: {team.level_stats.D}</span>
+                <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">期间新增</p>
+                    <p className="text-lg font-bold text-primary">{team.today_customers}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">累计客户</p>
+                    <p className="text-lg font-bold">{team.total_customers}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 col-span-2 md:col-span-2">
+                    <p className="text-xs text-muted-foreground mb-1">期间变化</p>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <span className="text-blue-600">A+{team.today_level_stats?.A || 0}</span>
+                      <span className="text-cyan-600">B+{team.today_level_stats?.B || 0}</span>
+                      <span className="text-amber-600">C+{team.today_level_stats?.C || 0}</span>
+                      <span className="text-emerald-600">D+{team.today_level_stats?.D || 0}</span>
                     </div>
-                    {team.transitions && (team.transitions.A_to_B > 0 || team.transitions.B_to_C > 0 || team.transitions.C_to_D > 0) && (
-                      <div className="flex gap-3 text-xs text-muted-foreground">
-                        <span>今日转化：</span>
-                        <span>A→B: {team.transitions.A_to_B}</span>
-                        <span>B→C: {team.transitions.B_to_C}</span>
-                        <span>C→D: {team.transitions.C_to_D}</span>
-                      </div>
-                    )}
+                  </div>
+                </div>
+                {team.level_stats && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                    <div className="rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+                      <p className="text-xs text-muted-foreground">A类当前</p>
+                      <p className="text-base font-bold text-blue-600">{team.level_stats.A}</p>
+                    </div>
+                    <div className="rounded-lg bg-cyan-50 px-3 py-2 dark:bg-cyan-950/30">
+                      <p className="text-xs text-muted-foreground">B类当前</p>
+                      <p className="text-base font-bold text-cyan-600">{team.level_stats.B}</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-950/30">
+                      <p className="text-xs text-muted-foreground">C类当前</p>
+                      <p className="text-base font-bold text-amber-600">{team.level_stats.C}</p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
+                      <p className="text-xs text-muted-foreground">D类当前</p>
+                      <p className="text-base font-bold text-emerald-600">{team.level_stats.D}</p>
+                    </div>
+                  </div>
+                )}
+                {team.transitions && (
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <span>期间转化：</span>
+                    <span>A→B: {team.transitions.A_to_B}</span>
+                    <span>B→C: {team.transitions.B_to_C}</span>
+                    <span>C→D: {team.transitions.C_to_D}</span>
                   </div>
                 )}
               </CardHeader>
               <CardContent>
                 {team.employees.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {team.employees.map((emp, index) => (
-                      <div key={emp.id}>
-                        <div
-                          className="flex items-center gap-3 p-2 rounded-lg border cursor-pointer hover:bg-muted/50"
+                      <div key={emp.id} className="rounded-lg border bg-card">
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 p-3 text-left hover:bg-muted/30 rounded-lg"
                           onClick={() => toggleEmployee(emp.id)}
                         >
-                          <div
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
-                          >
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getRankStyle(index)}`}>
                             {index + 1}
                           </div>
-                          <EmployeeAvatar 
-                            name={emp.name} 
-                            src={avatarMap[emp.id]} 
-                            size="sm"
-                          />
+                          <EmployeeAvatar name={emp.name} src={avatarMap[emp.id]} size="sm" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{emp.name}</p>
-                            {emp.level_stats && (
-                              <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                                <span className="text-blue-600">A:{emp.level_stats.A}</span>
-                                <span className="text-cyan-600">B:{emp.level_stats.B}</span>
-                                <span className="text-amber-600">C:{emp.level_stats.C}</span>
-                                <span className="text-emerald-600">D:{emp.level_stats.D}</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium truncate">{emp.name}</p>
+                              <span className="text-xs text-muted-foreground shrink-0">今日 +{emp.today_customers}</span>
+                              <span className="text-xs text-muted-foreground shrink-0">累计 {emp.total_customers}</span>
+                            </div>
+                            <div className="mt-1 grid grid-cols-4 gap-2 text-xs md:hidden">
+                              <span className="text-blue-600">A:{emp.level_stats?.A ?? 0}/+{emp.today_level_stats?.A ?? 0}</span>
+                              <span className="text-cyan-600">B:{emp.level_stats?.B ?? 0}/+{emp.today_level_stats?.B ?? 0}</span>
+                              <span className="text-amber-600">C:{emp.level_stats?.C ?? 0}/+{emp.today_level_stats?.C ?? 0}</span>
+                              <span className="text-emerald-600">D:{emp.level_stats?.D ?? 0}/+{emp.today_level_stats?.D ?? 0}</span>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-primary">+{emp.today_customers}</p>
-                            <p className="text-xs text-muted-foreground">累计 {emp.total_customers}</p>
+                          <span className="text-xs text-muted-foreground hidden md:inline">
+                            {expandedEmployees.has(emp.id) ? '收起' : '明细'}
+                          </span>
+                        </button>
+                        <div className="hidden md:block border-t">
+                          <div className="grid grid-cols-[1.2fr_repeat(4,1fr)_0.8fr_0.8fr] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
+                            <span>员工</span>
+                            <span>A类 当前/期间</span>
+                            <span>B类 当前/期间</span>
+                            <span>C类 当前/期间</span>
+                            <span>D类 当前/期间</span>
+                            <span>今日新增</span>
+                            <span>累计客户</span>
+                          </div>
+                          <div className="grid grid-cols-[1.2fr_repeat(4,1fr)_0.8fr_0.8fr] gap-2 px-3 py-2 text-sm border-t">
+                            <span className="truncate font-medium">{emp.name}</span>
+                            <span className="text-blue-600">{emp.level_stats?.A ?? 0}/+{emp.today_level_stats?.A ?? 0}</span>
+                            <span className="text-cyan-600">{emp.level_stats?.B ?? 0}/+{emp.today_level_stats?.B ?? 0}</span>
+                            <span className="text-amber-600">{emp.level_stats?.C ?? 0}/+{emp.today_level_stats?.C ?? 0}</span>
+                            <span className="text-emerald-600">{emp.level_stats?.D ?? 0}/+{emp.today_level_stats?.D ?? 0}</span>
+                            <span>+{emp.today_customers}</span>
+                            <span>{emp.total_customers}</span>
                           </div>
                         </div>
-                        {/* 展开明细 */}
                         {expandedEmployees.has(emp.id) && (
-                          <div className="mt-1 ml-12 p-3 bg-muted/30 rounded-lg text-xs space-y-2">
-                            <div className="flex gap-4">
-                              <span>今日新增：</span>
-                              <span className="text-blue-600">A+{emp.today_level_stats?.A || 0}</span>
-                              <span className="text-cyan-600">B+{emp.today_level_stats?.B || 0}</span>
-                              <span className="text-amber-600">C+{emp.today_level_stats?.C || 0}</span>
-                              <span className="text-emerald-600">D+{emp.today_level_stats?.D || 0}</span>
+                          <div className="border-t p-3 bg-muted/20 space-y-3 text-xs">
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                              <div className="rounded border p-2"><span className="text-muted-foreground">A类当前</span><div className="font-bold text-blue-600">{emp.level_stats?.A ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">B类当前</span><div className="font-bold text-cyan-600">{emp.level_stats?.B ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">C类当前</span><div className="font-bold text-amber-600">{emp.level_stats?.C ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">D类当前</span><div className="font-bold text-emerald-600">{emp.level_stats?.D ?? 0}</div></div>
                             </div>
-                            {emp.transitions && (emp.transitions.A_to_B > 0 || emp.transitions.B_to_C > 0 || emp.transitions.C_to_D > 0) && (
-                              <div className="flex gap-4 text-muted-foreground">
-                                <span>今日转化：</span>
-                                <span>A→B: {emp.transitions.A_to_B}</span>
-                                <span>B→C: {emp.transitions.B_to_C}</span>
-                                <span>C→D: {emp.transitions.C_to_D}</span>
-                              </div>
-                            )}
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                              <div className="rounded border p-2"><span className="text-muted-foreground">A类期间新增</span><div className="font-bold text-blue-600">+{emp.today_level_stats?.A ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">B类期间新增</span><div className="font-bold text-cyan-600">+{emp.today_level_stats?.B ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">C类期间新增</span><div className="font-bold text-amber-600">+{emp.today_level_stats?.C ?? 0}</div></div>
+                              <div className="rounded border p-2"><span className="text-muted-foreground">D类期间新增</span><div className="font-bold text-emerald-600">+{emp.today_level_stats?.D ?? 0}</div></div>
+                            </div>
+                            <div className="flex flex-wrap gap-3 text-muted-foreground">
+                              <span>等级转化：</span>
+                              <span>A→B: {emp.transitions?.A_to_B ?? 0}</span>
+                              <span>B→C: {emp.transitions?.B_to_C ?? 0}</span>
+                              <span>C→D: {emp.transitions?.C_to_D ?? 0}</span>
+                            </div>
                           </div>
                         )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    暂无员工数据
-                  </div>
+                  <div className="text-center py-4 text-sm text-muted-foreground">暂无员工数据</div>
                 )}
               </CardContent>
             </Card>

@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
+type Levels = { A: number; B: number; C: number; D: number };
+type Transitions = { A_to_B: number; B_to_C: number; C_to_D: number };
+
+const emptyLevels = (): Levels => ({ A: 0, B: 0, C: 0, D: 0 });
+const emptyTransitions = (): Transitions => ({ A_to_B: 0, B_to_C: 0, C_to_D: 0 });
+
+function getDateRange(range: string | null, customStart?: string | null, customEnd?: string | null) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let start = new Date(today);
+  let end = new Date(today);
+
+  if (range === 'yesterday') {
+    start.setDate(start.getDate() - 1);
+    end = new Date(start);
+  } else if (range === '7d') {
+    start.setDate(start.getDate() - 6);
+  } else if (range === 'custom' && customStart && customEnd) {
+    start = new Date(customStart + 'T00:00:00');
+    end = new Date(customEnd + 'T00:00:00');
+  }
+
+  return {
+    startStr: start.toISOString().split('T')[0],
+    endStr: end.toISOString().split('T')[0],
+  };
+}
+
 // GET /api/admin/stats - 管理员统计（所有团队）
 export async function GET(request: NextRequest) {
   try {
@@ -10,26 +38,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '无权限' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const range = searchParams.get('range') || 'today';
+    const customStart = searchParams.get('start');
+    const customEnd = searchParams.get('end');
+    const { startStr, endStr } = getDateRange(range, customStart, customEnd);
+    const rangeStart = startStr + 'T00:00:00';
+    const rangeEnd = endStr + 'T23:59:59';
+
     const supabase = getSupabaseClient();
 
-    // 获取服务器时间
-    const { data: nowData } = await supabase.rpc('now' as any).single();
-    const serverNow = nowData ? new Date(nowData as string) : new Date();
-    const todayStr = serverNow.toISOString().split('T')[0];
-
-    // 获取所有团队
     const { data: teams } = await supabase
       .from('teams')
       .select('id, team_name, team_code')
       .order('team_name');
 
     if (!teams || teams.length === 0) {
-      return NextResponse.json({ success: true, data: { teams: [] } });
+      return NextResponse.json({ success: true, data: { teams: [], date_range: { start: startStr, end: endStr } } });
     }
 
     const teamIds = teams.map(t => t.id);
 
-    // 获取所有 active 员工
     const { data: employees } = await supabase
       .from('profiles')
       .select('id, name, team_id, avatar_url')
@@ -37,42 +66,34 @@ export async function GET(request: NextRequest) {
       .eq('status', 'active')
       .in('team_id', teamIds);
 
-    // 获取今日新增客户（包含等级）
-    const { data: todayCustomers } = await supabase
+    const { data: rangeCustomers } = await supabase
       .from('customers')
-      .select('employee_id, team_id, customer_level')
+      .select('employee_id, team_id, customer_level, created_at')
       .in('team_id', teamIds)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', rangeStart)
+      .lte('created_at', rangeEnd);
 
-    // 获取累计客户（包含等级信息）
     const { data: allCustomers } = await supabase
       .from('customers')
       .select('employee_id, team_id, customer_level')
       .in('team_id', teamIds);
 
-    // 获取今日等级变化记录（包含 employee_id）
-    const { data: todayTransitions } = await supabase
+    const { data: rangeTransitions } = await supabase
       .from('customer_level_logs')
-      .select('employee_id, team_id, from_level, to_level')
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .select('employee_id, team_id, from_level, to_level, created_at')
+      .gte('created_at', rangeStart)
+      .lte('created_at', rangeEnd);
 
-    // 初始化统计 Map
     const teamTodayMap: Record<number, number> = {};
     const teamTotalMap: Record<number, number> = {};
-    const teamLevelMap: Record<number, { A: number; B: number; C: number; D: number }> = {};
-    const teamTodayLevelMap: Record<number, { A: number; B: number; C: number; D: number }> = {};
-    const teamTransitionMap: Record<number, { A_to_B: number; B_to_C: number; C_to_D: number }> = {};
-    
+    const teamLevelMap: Record<number, Levels> = {};
+    const teamTodayLevelMap: Record<number, Levels> = {};
+    const teamTransitionMap: Record<number, Transitions> = {};
     const empTodayMap: Record<number, number> = {};
     const empTotalMap: Record<number, number> = {};
-    const empLevelMap: Record<number, { A: number; B: number; C: number; D: number }> = {};
-    const empTodayLevelMap: Record<number, { A: number; B: number; C: number; D: number }> = {};
-    const empTransitionMap: Record<number, { A_to_B: number; B_to_C: number; C_to_D: number }> = {};
-
-    const emptyLevels = (): { A: number; B: number; C: number; D: number } => ({ A: 0, B: 0, C: 0, D: 0 });
-    const emptyTransitions = (): { A_to_B: number; B_to_C: number; C_to_D: number } => ({ A_to_B: 0, B_to_C: 0, C_to_D: 0 });
+    const empLevelMap: Record<number, Levels> = {};
+    const empTodayLevelMap: Record<number, Levels> = {};
+    const empTransitionMap: Record<number, Transitions> = {};
 
     for (const id of teamIds) {
       teamTodayMap[id] = 0;
@@ -90,53 +111,44 @@ export async function GET(request: NextRequest) {
       empTransitionMap[emp.id] = emptyTransitions();
     }
 
-    // 统计今日新增
-    for (const c of todayCustomers || []) {
+    for (const c of rangeCustomers || []) {
       teamTodayMap[c.team_id] = (teamTodayMap[c.team_id] || 0) + 1;
       empTodayMap[c.employee_id] = (empTodayMap[c.employee_id] || 0) + 1;
-      const level = (c.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
-      if (teamTodayLevelMap[c.team_id]) {
-        teamTodayLevelMap[c.team_id][level]++;
-      }
-      if (empTodayLevelMap[c.employee_id]) {
-        empTodayLevelMap[c.employee_id][level]++;
-      }
+      const level = (c.customer_level || 'A') as keyof Levels;
+      const teamTodayLevels = teamTodayLevelMap[c.team_id] ?? emptyLevels();
+      const empTodayLevels = empTodayLevelMap[c.employee_id] ?? emptyLevels();
+      teamTodayLevels[level] += 1;
+      empTodayLevels[level] += 1;
+      teamTodayLevelMap[c.team_id] = teamTodayLevels;
+      empTodayLevelMap[c.employee_id] = empTodayLevels;
     }
 
-    // 统计累计客户和当前等级分布
     for (const c of allCustomers || []) {
       teamTotalMap[c.team_id] = (teamTotalMap[c.team_id] || 0) + 1;
       empTotalMap[c.employee_id] = (empTotalMap[c.employee_id] || 0) + 1;
-      const level = (c.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
-      if (teamLevelMap[c.team_id]) {
-        teamLevelMap[c.team_id][level]++;
-      }
-      if (empLevelMap[c.employee_id]) {
-        empLevelMap[c.employee_id][level]++;
-      }
+      const level = (c.customer_level || 'A') as keyof Levels;
+      const teamLevels = teamLevelMap[c.team_id] ?? emptyLevels();
+      const empLevels = empLevelMap[c.employee_id] ?? emptyLevels();
+      teamLevels[level] += 1;
+      empLevels[level] += 1;
+      teamLevelMap[c.team_id] = teamLevels;
+      empLevelMap[c.employee_id] = empLevels;
     }
 
-    // 统计今日转化
     const totalTransitions = emptyTransitions();
-    for (const log of todayTransitions || []) {
-      if (log.from_level === 'A' && log.to_level === 'B') {
-        totalTransitions.A_to_B++;
-        if (teamTransitionMap[log.team_id]) teamTransitionMap[log.team_id].A_to_B++;
-        if (empTransitionMap[log.employee_id]) empTransitionMap[log.employee_id].A_to_B++;
-      }
-      if (log.from_level === 'B' && log.to_level === 'C') {
-        totalTransitions.B_to_C++;
-        if (teamTransitionMap[log.team_id]) teamTransitionMap[log.team_id].B_to_C++;
-        if (empTransitionMap[log.employee_id]) empTransitionMap[log.employee_id].B_to_C++;
-      }
-      if (log.from_level === 'C' && log.to_level === 'D') {
-        totalTransitions.C_to_D++;
-        if (teamTransitionMap[log.team_id]) teamTransitionMap[log.team_id].C_to_D++;
-        if (empTransitionMap[log.employee_id]) empTransitionMap[log.employee_id].C_to_D++;
+    for (const log of rangeTransitions || []) {
+      const key = `${log.from_level}_to_${log.to_level}` as keyof Transitions;
+      if (key in totalTransitions) {
+        totalTransitions[key] += 1;
+        const teamTransitions = teamTransitionMap[log.team_id] ?? emptyTransitions();
+        const empTransitions = empTransitionMap[log.employee_id] ?? emptyTransitions();
+        teamTransitions[key] += 1;
+        empTransitions[key] += 1;
+        teamTransitionMap[log.team_id] = teamTransitions;
+        empTransitionMap[log.employee_id] = empTransitions;
       }
     }
 
-    // 组合团队数据
     const teamStats = teams.map(t => {
       const teamEmployees = (employees || [])
         .filter(e => e.team_id === t.id)
@@ -151,9 +163,7 @@ export async function GET(request: NextRequest) {
           transitions: empTransitionMap[e.id] || emptyTransitions(),
         }))
         .sort((a, b) => {
-          if (b.today_customers !== a.today_customers) {
-            return b.today_customers - a.today_customers;
-          }
+          if (b.today_customers !== a.today_customers) return b.today_customers - a.today_customers;
           return b.total_customers - a.total_customers;
         });
 
@@ -170,12 +180,13 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      data: { 
+    return NextResponse.json({
+      success: true,
+      data: {
         teams: teamStats,
         today_transitions: totalTransitions,
-      } 
+        date_range: { start: startStr, end: endStr },
+      },
     });
   } catch (err) {
     console.error('获取管理员统计异常:', err);

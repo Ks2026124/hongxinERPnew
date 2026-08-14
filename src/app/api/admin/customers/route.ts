@@ -49,10 +49,20 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('获取客户列表失败:', error);
-      return NextResponse.json({ error: '获取客户列表失败' }, { status: 500 });
+      console.error('[CUSTOMERS_API] Supabase 查询错误:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      return NextResponse.json({ 
+        error: '获取客户列表失败',
+        details: error.message,
+        code: error.code 
+      }, { status: 500 });
     }
 
+    console.log('[CUSTOMERS_API] 查询成功，返回', data?.length || 0, '条记录');
     return NextResponse.json({ success: true, data: data || [] });
   } catch (err) {
     console.error('获取客户列表异常:', err);

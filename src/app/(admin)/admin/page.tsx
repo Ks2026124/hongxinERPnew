@@ -21,6 +21,7 @@ interface TeamStat {
   team_code: string;
   today_customers: number;
   total_customers: number;
+  level_stats?: { A: number; B: number; C: number; D: number };
   employees: TeamEmployee[];
 }
 
@@ -83,6 +84,20 @@ export default function AdminDashboard() {
   const totalCustomers = stats?.teams.reduce((sum, t) => sum + t.total_customers, 0) ?? 0;
   const todayCustomers = stats?.teams.reduce((sum, t) => sum + t.today_customers, 0) ?? 0;
 
+  // 计算客户等级统计
+  const levelStats = stats?.teams.reduce(
+    (acc, t) => {
+      if (t.level_stats) {
+        acc.A += t.level_stats.A;
+        acc.B += t.level_stats.B;
+        acc.C += t.level_stats.C;
+        acc.D += t.level_stats.D;
+      }
+      return acc;
+    },
+    { A: 0, B: 0, C: 0, D: 0 }
+  ) ?? { A: 0, B: 0, C: 0, D: 0 };
+
   return (
     <div className="space-y-6">
       <div>
@@ -90,7 +105,54 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground mt-1">全局数据概览</p>
       </div>
 
-      {/* 总览卡片 */}
+      {/* 客户等级统计卡片 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">A类客户</CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-700">{levelStats.A}</div>
+            <p className="text-xs text-blue-600 mt-1">新增客户</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100/50 border-cyan-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">B类客户</CardTitle>
+            <Users className="h-4 w-4 text-cyan-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-cyan-700">{levelStats.B}</div>
+            <p className="text-xs text-cyan-600 mt-1">深聊客户</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">C类客户</CardTitle>
+            <TrendingUp className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-700">{levelStats.C}</div>
+            <p className="text-xs text-amber-600 mt-1">付费意向</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">D类客户</CardTitle>
+            <Trophy className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-emerald-700">{levelStats.D}</div>
+            <p className="text-xs text-emerald-600 mt-1">成交客户</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 概览卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -150,6 +212,15 @@ export default function AdminDashboard() {
                   今日新增 <span className="font-bold text-primary">{team.today_customers}</span> 位客户
                   {' · '}累计 {team.total_customers} 位
                 </p>
+                {/* 客户等级统计 */}
+                {team.level_stats && (
+                  <div className="flex gap-3 mt-2 text-xs">
+                    <span className="text-blue-600">A: {team.level_stats.A}</span>
+                    <span className="text-cyan-600">B: {team.level_stats.B}</span>
+                    <span className="text-amber-600">C: {team.level_stats.C}</span>
+                    <span className="text-emerald-600">D: {team.level_stats.D}</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 {team.employees.length > 0 ? (

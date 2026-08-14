@@ -56,13 +56,29 @@ export async function GET() {
       .eq('employee_id', user.userId)
       .gte('created_at', weekStartStr + 'T00:00:00');
 
-    // 5. 最近添加的客户（5个）
+    // 5. 最近添加的客户（5个，包含等级）
     const { data: recentCustomers } = await supabase
       .from('customers')
-      .select('id, customer_name, phone, created_at')
+      .select('id, customer_name, phone, customer_level, created_at')
       .eq('employee_id', user.userId)
       .order('created_at', { ascending: false })
       .limit(5);
+
+    // 6. 客户等级统计（A/B/C/D 当前数量）
+    const { data: levelStats } = await supabase
+      .from('customers')
+      .select('customer_level')
+      .eq('employee_id', user.userId);
+
+    const levelCounts = { A: 0, B: 0, C: 0, D: 0 };
+    if (levelStats) {
+      levelStats.forEach((c: { customer_level: string }) => {
+        const level = c.customer_level as 'A' | 'B' | 'C' | 'D';
+        if (level in levelCounts) {
+          levelCounts[level]++;
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -72,6 +88,7 @@ export async function GET() {
         total_customers: totalCustomers || 0,
         week_customers: weekCustomers || 0,
         recent_customers: recentCustomers || [],
+        level_counts: levelCounts,
       },
     });
   } catch (err) {

@@ -45,21 +45,23 @@ export async function GET(request: NextRequest) {
       .gte('created_at', todayStr + 'T00:00:00')
       .lte('created_at', todayStr + 'T23:59:59');
 
-    // 获取累计客户
+    // 获取累计客户（包含等级信息）
     const { data: allCustomers } = await supabase
       .from('customers')
-      .select('employee_id, team_id')
+      .select('employee_id, team_id, customer_level')
       .in('team_id', teamIds);
 
     // 统计
     const teamTodayMap: Record<number, number> = {};
     const teamTotalMap: Record<number, number> = {};
+    const teamLevelMap: Record<number, { A: number; B: number; C: number; D: number }> = {};
     const empTodayMap: Record<number, number> = {};
     const empTotalMap: Record<number, number> = {};
 
     for (const id of teamIds) {
       teamTodayMap[id] = 0;
       teamTotalMap[id] = 0;
+      teamLevelMap[id] = { A: 0, B: 0, C: 0, D: 0 };
     }
 
     for (const emp of employees || []) {
@@ -75,6 +77,8 @@ export async function GET(request: NextRequest) {
     for (const c of allCustomers || []) {
       teamTotalMap[c.team_id] = (teamTotalMap[c.team_id] || 0) + 1;
       empTotalMap[c.employee_id] = (empTotalMap[c.employee_id] || 0) + 1;
+      const level = (c.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
+      teamLevelMap[c.team_id][level]++;
     }
 
     // 组合团队数据
@@ -101,6 +105,7 @@ export async function GET(request: NextRequest) {
         team_code: t.team_code,
         today_customers: teamTodayMap[t.id] || 0,
         total_customers: teamTotalMap[t.id] || 0,
+        level_stats: teamLevelMap[t.id],
         employees: teamEmployees,
       };
     });

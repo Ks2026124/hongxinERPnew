@@ -15,8 +15,10 @@ interface EmployeeStats {
     id: number;
     customer_name: string;
     phone: string | null;
+    customer_level?: string;
     created_at: string;
   }>;
+  level_counts: LevelStats;
 }
 
 interface LevelStats {
@@ -125,9 +127,19 @@ export default function EmployeeDashboard() {
     return date.toLocaleString('zh-CN', {
       month: '2-digit',
       day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
     });
+  };
+
+  // 客户等级徽章
+  const getLevelBadge = (level?: string) => {
+    const badges: Record<string, { text: string; className: string }> = {
+      A: { text: 'A类', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+      B: { text: 'B类', className: 'bg-green-100 text-green-700 border-green-200' },
+      C: { text: 'C类', className: 'bg-orange-100 text-orange-700 border-orange-200' },
+      D: { text: 'D类', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+    };
+    const badge = badges[level || 'A'] || badges.A;
+    return <span className={`text-xs px-1.5 py-0.5 rounded border ${badge.className}`}>{badge.text}</span>;
   };
 
   const getRankStyle = (index: number) => {
@@ -158,45 +170,49 @@ export default function EmployeeDashboard() {
         <p className="text-muted-foreground mt-1">欢迎回来，查看您的工作数据</p>
       </div>
 
-      {/* 统计卡片 */}
+      {/* 客户等级统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-blue-50 border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">今日新增客户</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-blue-700">A类客户</CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.today_customers ?? 0}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats?.level_counts?.A ?? 0}</div>
+            <p className="text-xs text-blue-600 mt-1">新增客户</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-green-50 border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">今日上传截图</CardTitle>
-            <Image className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-green-700">B类客户</CardTitle>
+            <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.today_images ?? 0}</div>
+            <div className="text-2xl font-bold text-green-700">{stats?.level_counts?.B ?? 0}</div>
+            <p className="text-xs text-green-600 mt-1">深聊客户</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-orange-50 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本周新增客户</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-orange-700">C类客户</CardTitle>
+            <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.week_customers ?? 0}</div>
+            <div className="text-2xl font-bold text-orange-700">{stats?.level_counts?.C ?? 0}</div>
+            <p className="text-xs text-orange-600 mt-1">付费意向</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-purple-50 border-purple-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">累计客户数</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-purple-700">D类客户</CardTitle>
+            <Trophy className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total_customers ?? 0}</div>
+            <div className="text-2xl font-bold text-purple-700">{stats?.level_counts?.D ?? 0}</div>
+            <p className="text-xs text-purple-600 mt-1">成交客户</p>
           </CardContent>
         </Card>
       </div>
@@ -434,7 +450,10 @@ export default function EmployeeDashboard() {
                     className="flex items-center justify-between p-2 rounded-lg border"
                   >
                     <div>
-                      <p className="font-medium">{customer.customer_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{customer.customer_name}</p>
+                        {getLevelBadge(customer.customer_level)}
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         {customer.phone || '无手机号'}
                       </p>

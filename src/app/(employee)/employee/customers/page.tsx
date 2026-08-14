@@ -156,7 +156,14 @@ export default function EmployeeCustomersPage() {
     try {
       // 先进行客户查重
       if (formData.wechat_id || formData.phone) {
-        const checkRes = await fetch(`/api/employee/customers/check-duplicate?wechat_id=${encodeURIComponent(formData.wechat_id)}&phone=${encodeURIComponent(formData.phone)}`);
+        const checkRes = await fetch('/api/employee/customers/check-duplicate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wechat_id: formData.wechat_id,
+            phone: formData.phone,
+          }),
+        });
         const checkData = await checkRes.json();
         if (checkData.exists) {
           alert(`该客户已存在！\n\n客户姓名：${checkData.customer?.name}\n所属员工：${checkData.customer?.employee_name || '未知'}\n所属团队：${checkData.customer?.team_name || '未知'}\n当前等级：${checkData.customer?.customer_level || 'A'}类\n\n禁止重复创建。`);

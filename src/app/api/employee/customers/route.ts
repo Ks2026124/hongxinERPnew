@@ -62,19 +62,25 @@ export async function POST(request: NextRequest) {
       console.log('[CREATE_CUSTOMER] INVALID JSON BODY');
       return NextResponse.json({ error: '请求数据格式错误' }, { status: 400 });
     }
-    const { customer_name, phone, wechat_id, remark, verification_id } = body as {
+    const { customer_name, phone, wechat_id, wechat, remark, verification_id, customer_level } = body as {
       customer_name?: string;
       phone?: string;
       wechat_id?: string;
+      wechat?: string;
       remark?: string;
       verification_id?: number;
+      customer_level?: string;
     };
+    // 兼容前端传 wechat 或 wechat_id
+    const finalWechatId = wechat_id || wechat || '';
+    const finalCustomerLevel = customer_level === 'B' || customer_level === 'C' || customer_level === 'D' ? customer_level : 'A';
 
     console.log('[CREATE_CUSTOMER] customer data:');
     console.log('  name =', customer_name);
-    console.log('  wechat =', wechat_id || '(empty)');
+    console.log('  wechat =', finalWechatId || '(empty)');
     console.log('  phone =', phone || '(empty)');
     console.log('  remark =', remark ? `(length ${remark.length})` : '(empty)');
+    console.log('  customer_level =', finalCustomerLevel);
     console.log('  verification_id =', verification_id);
 
     if (!customer_name || !customer_name.trim()) {
@@ -161,18 +167,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '当前员工未归属团队，无法新增客户' }, { status: 400 });
     }
     console.log('[CREATE_CUSTOMER] FINAL team_id =', teamId);
-    console.log('[CREATE_CUSTOMER] customer_level = A');
+    console.log('[CREATE_CUSTOMER] customer_level =', finalCustomerLevel);
 
     // 创建客户
     console.log('[CREATE_CUSTOMER] INSERT START');
     const insertPayload = {
       customer_name: customer_name.trim(),
       phone: phone?.trim() || null,
-      wechat_id: wechat_id?.trim() || null,
+      wechat_id: finalWechatId?.trim() || null,
       remark: remark?.trim() || null,
       employee_id: user.userId,
       team_id: teamId,
-      customer_level: 'A',
+      customer_level: finalCustomerLevel,
     };
     console.log('[CREATE_CUSTOMER] INSERT payload =', JSON.stringify(insertPayload));
 
@@ -190,19 +196,19 @@ export async function POST(request: NextRequest) {
       console.error('  details =', error.details);
       console.error('  hint =', error.hint);
       return NextResponse.json(
-        { error: '新增客户失败', detail: error.message, code: error.code, db_details: error.details, db_hint: error.hint },
+        { success: false, error: '新增客户失败', detail: error.message, code: error.code, db_details: error.details, db_hint: error.hint },
         { status: 500 }
       );
     }
     console.log('[CREATE_CUSTOMER] INSERT RESULT = SUCCESS');
     console.log('  new customer id =', data.id);
 
-    // 记录等级变化日志（新建客户，从 null 到 A）。失败不影响主流程，但必须记录日志。
+    // 记录等级变化日志（新建客户，从 null 到指定等级）。失败不影响主流程，但必须记录日志。
     const { error: logError } = await supabase.from('customer_level_logs').insert({
       customer_id: data.id,
       employee_id: user.userId,
       from_level: null,
-      to_level: 'A',
+      to_level: finalCustomerLevel,
       remark: '新建客户',
     });
     if (logError) {

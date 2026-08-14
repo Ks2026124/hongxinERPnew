@@ -2,17 +2,22 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, TrendingUp, Trophy, ArrowRight } from 'lucide-react';
+import { Users, Building2, TrendingUp, Trophy, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employee-avatar';
 import { useEmployeeAvatars } from '@/hooks/use-employee-avatars';
 import { Badge } from '@/components/ui/badge';
 
+interface LevelStats { A: number; B: number; C: number; D: number; }
+interface Transitions { A_to_B: number; B_to_C: number; C_to_D: number; }
 interface TeamEmployee {
   id: number;
   name: string;
   avatar_url: string | null;
   today_customers: number;
   total_customers: number;
+  level_stats?: LevelStats;
+  today_level_stats?: LevelStats;
+  transitions?: Transitions;
 }
 
 interface TeamStat {
@@ -21,13 +26,15 @@ interface TeamStat {
   team_code: string;
   today_customers: number;
   total_customers: number;
-  level_stats?: { A: number; B: number; C: number; D: number };
+  level_stats?: LevelStats;
+  today_level_stats?: LevelStats;
+  transitions?: Transitions;
   employees: TeamEmployee[];
 }
 
 interface AdminStats {
   teams: TeamStat[];
-  today_transitions?: { A_to_B: number; B_to_C: number; C_to_D: number };
+  today_transitions?: Transitions;
 }
 
 export default function AdminDashboard() {
@@ -35,6 +42,17 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   // 获取所有员工 ID
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<number>>(new Set());
+
+  const toggleEmployee = (id: number) => {
+    setExpandedEmployees(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const allEmployeeIds = useMemo(() => {
     if (!stats?.teams) return [];
     return stats.teams.flatMap(t => t.employees.map(e => e.id));
@@ -243,11 +261,21 @@ export default function AdminDashboard() {
                 </p>
                 {/* 客户等级统计 */}
                 {team.level_stats && (
-                  <div className="flex gap-3 mt-2 text-xs">
-                    <span className="text-blue-600">A: {team.level_stats.A}</span>
-                    <span className="text-cyan-600">B: {team.level_stats.B}</span>
-                    <span className="text-amber-600">C: {team.level_stats.C}</span>
-                    <span className="text-emerald-600">D: {team.level_stats.D}</span>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-blue-600">A: {team.level_stats.A}</span>
+                      <span className="text-cyan-600">B: {team.level_stats.B}</span>
+                      <span className="text-amber-600">C: {team.level_stats.C}</span>
+                      <span className="text-emerald-600">D: {team.level_stats.D}</span>
+                    </div>
+                    {team.transitions && (team.transitions.A_to_B > 0 || team.transitions.B_to_C > 0 || team.transitions.C_to_D > 0) && (
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span>今日转化：</span>
+                        <span>A→B: {team.transitions.A_to_B}</span>
+                        <span>B→C: {team.transitions.B_to_C}</span>
+                        <span>C→D: {team.transitions.C_to_D}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardHeader>
@@ -255,27 +283,57 @@ export default function AdminDashboard() {
                 {team.employees.length > 0 ? (
                   <div className="space-y-2">
                     {team.employees.map((emp, index) => (
-                      <div
-                        key={emp.id}
-                        className="flex items-center gap-3 p-2 rounded-lg border"
-                      >
+                      <div key={emp.id}>
                         <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                          className="flex items-center gap-3 p-2 rounded-lg border cursor-pointer hover:bg-muted/50"
+                          onClick={() => toggleEmployee(emp.id)}
                         >
-                          {index + 1}
+                          <div
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                          >
+                            {index + 1}
+                          </div>
+                          <EmployeeAvatar 
+                            name={emp.name} 
+                            src={avatarMap[emp.id]} 
+                            size="sm"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{emp.name}</p>
+                            {emp.level_stats && (
+                              <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
+                                <span className="text-blue-600">A:{emp.level_stats.A}</span>
+                                <span className="text-cyan-600">B:{emp.level_stats.B}</span>
+                                <span className="text-amber-600">C:{emp.level_stats.C}</span>
+                                <span className="text-emerald-600">D:{emp.level_stats.D}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-primary">+{emp.today_customers}</p>
+                            <p className="text-xs text-muted-foreground">累计 {emp.total_customers}</p>
+                          </div>
                         </div>
-                        <EmployeeAvatar 
-                          name={emp.name} 
-                          src={avatarMap[emp.id]} 
-                          size="sm"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{emp.name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-primary">+{emp.today_customers}</p>
-                          <p className="text-xs text-muted-foreground">累计 {emp.total_customers}</p>
-                        </div>
+                        {/* 展开明细 */}
+                        {expandedEmployees.has(emp.id) && (
+                          <div className="mt-1 ml-12 p-3 bg-muted/30 rounded-lg text-xs space-y-2">
+                            <div className="flex gap-4">
+                              <span>今日新增：</span>
+                              <span className="text-blue-600">A+{emp.today_level_stats?.A || 0}</span>
+                              <span className="text-cyan-600">B+{emp.today_level_stats?.B || 0}</span>
+                              <span className="text-amber-600">C+{emp.today_level_stats?.C || 0}</span>
+                              <span className="text-emerald-600">D+{emp.today_level_stats?.D || 0}</span>
+                            </div>
+                            {emp.transitions && (emp.transitions.A_to_B > 0 || emp.transitions.B_to_C > 0 || emp.transitions.C_to_D > 0) && (
+                              <div className="flex gap-4 text-muted-foreground">
+                                <span>今日转化：</span>
+                                <span>A→B: {emp.transitions.A_to_B}</span>
+                                <span>B→C: {emp.transitions.B_to_C}</span>
+                                <span>C→D: {emp.transitions.C_to_D}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

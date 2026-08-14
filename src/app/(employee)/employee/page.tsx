@@ -33,6 +33,18 @@ interface TeamStats {
   members: TeamMember[];
 }
 
+interface AllTeamsData {
+  my_team_id: number | null;
+  teams: Array<{
+    team_id: number;
+    team_name: string;
+    team_code: string;
+    today_customers: number;
+    total_customers: number;
+    members: TeamMember[];
+  }>;
+}
+
 interface TeamPerformance {
   team_id: number;
   team_name: string;
@@ -52,13 +64,20 @@ export default function EmployeeDashboard() {
   const [stats, setStats] = useState<EmployeeStats | null>(null);
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null);
   const [teamPerformance, setTeamPerformance] = useState<TeamPerformanceData | null>(null);
+  const [allTeamsData, setAllTeamsData] = useState<AllTeamsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 获取团队成员 ID 列表
-  const memberIds = useMemo(() => 
-    teamStats?.members?.map(m => m.id) || [], 
-    [teamStats]
-  );
+  // 获取所有团队成员 ID 列表（用于批量获取头像）
+  const memberIds = useMemo(() => {
+    if (!allTeamsData?.teams) return [];
+    const ids: number[] = [];
+    for (const team of allTeamsData.teams) {
+      for (const member of team.members) {
+        ids.push(member.id);
+      }
+    }
+    return ids;
+  }, [allTeamsData]);
   
   // 批量获取团队成员头像
   const { avatarMap } = useEmployeeAvatars(memberIds);
@@ -69,17 +88,20 @@ export default function EmployeeDashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, teamRes, perfRes] = await Promise.all([
+      const [statsRes, teamRes, perfRes, allTeamsRes] = await Promise.all([
         fetch('/api/employee/stats'),
         fetch('/api/employee/team-stats'),
         fetch('/api/employee/team-performance'),
+        fetch('/api/employee/all-teams-stats'),
       ]);
       const statsData = await statsRes.json();
       const teamData = await teamRes.json();
       const perfData = await perfRes.json();
+      const allTeamsDataRes = await allTeamsRes.json();
       if (statsData.success) setStats(statsData.data);
       if (teamData.success) setTeamStats(teamData.data);
       if (perfData.success) setTeamPerformance(perfData.data);
+      if (allTeamsDataRes.success) setAllTeamsData(allTeamsDataRes.data);
     } catch (err) {
       console.error('获取数据失败:', err);
     } finally {
@@ -258,57 +280,107 @@ export default function EmployeeDashboard() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 团队排行榜 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-blue-500" />
-              团队排行榜
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {teamStats?.team_name || '我的团队'} - 今日动态
-            </p>
-          </CardHeader>
-          <CardContent>
-            {teamStats?.members && teamStats.members.length > 0 ? (
-              <div className="space-y-3">
-                {teamStats.members.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-3 p-2 rounded-lg border"
+      {/* 团队排行榜 - 显示所有团队 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-blue-500" />
+            团队排行榜
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            查看所有团队的今日动态和业绩对比
+          </p>
+        </CardHeader>
+        <CardContent>
+          {allTeamsData?.teams && allTeamsData.teams.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {allTeamsData.teams.map((team) => {
+                const isMyTeam = team.team_id === allTeamsData.my_team_id;
+                return (
+                  <div 
+                    key={team.team_id} 
+                    className={`rounded-xl border-2 p-4 ${
+                      isMyTeam 
+                        ? 'border-primary/30 bg-primary/5' 
+                        : 'border-border bg-card'
+                    }`}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${getRankStyle(index)}`}
-                    >
-                      {index + 1}
+                    {/* 团队头部 */}
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-lg">{team.team_name}</h3>
+                          {isMyTeam && (
+                            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                              我的团队
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{team.team_code}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">今日新增</p>
+                            <p className="text-xl font-bold text-primary">{team.today_customers}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">累计客户</p>
+                            <p className="text-xl font-bold">{team.total_customers}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <EmployeeAvatar 
-                      name={member.name} 
-                      src={avatarMap[member.id]} 
-                      size="md"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        累计 {member.total_customers} 位客户
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary">+{member.today_customers}</p>
-                      <p className="text-xs text-muted-foreground">今日</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                暂无团队成员数据
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
+                    {/* 团队成员排行榜 */}
+                    {team.members && team.members.length > 0 ? (
+                      <div className="space-y-2">
+                        {team.members.map((member, index) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                            >
+                              {index + 1}
+                            </div>
+                            <EmployeeAvatar 
+                              name={member.name} 
+                              src={avatarMap[member.id]} 
+                              size="sm"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{member.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                累计 {member.total_customers} 位
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-primary text-sm">+{member.today_customers}</p>
+                              <p className="text-xs text-muted-foreground">今日</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground text-sm">
+                        暂无团队成员
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              暂无团队数据
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 最近添加的客户 */}
         <Card>
           <CardHeader>
@@ -344,24 +416,24 @@ export default function EmployeeDashboard() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* 团队今日统计 */}
-      {teamStats && (
-        <Card>
-          <CardHeader>
-            <CardTitle>团队今日新增</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-primary">
-              {teamStats.team_today_customers}
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {teamStats.team_name} 今日共新增客户
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        {/* 团队今日统计 */}
+        {teamStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle>团队今日新增</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">
+                {teamStats.team_today_customers}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {teamStats.team_name} 今日共新增客户
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

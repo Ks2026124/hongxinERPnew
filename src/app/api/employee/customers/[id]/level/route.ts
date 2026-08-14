@@ -54,7 +54,7 @@ export async function PUT(
       return NextResponse.json({ error: '客户不存在或无权修改' }, { status: 404 });
     }
 
-    const fromLevel = customer.customer_level;
+    const fromLevel = (customer.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
 
     // 如果等级没有变化，直接返回
     if (fromLevel === customer_level) {
@@ -74,7 +74,7 @@ export async function PUT(
       return NextResponse.json({ error: '更新客户等级失败' }, { status: 500 });
     }
 
-    // 记录等级变化日志
+    // 记录等级变化日志（支持正常流转 A→B→C→D 以及业务回退 B→A、C→B、D→C）
     const levelNames: Record<string, string> = {
       A: '新增客户',
       B: '深聊客户',
@@ -87,7 +87,7 @@ export async function PUT(
       employee_id: user.userId,
       from_level: fromLevel,
       to_level: customer_level,
-      remark: `${fromLevel || '无'} → ${customer_level} (${levelNames[customer_level]})`,
+      remark: `${fromLevel} → ${customer_level} (${levelNames[customer_level]})`,
     });
 
     return NextResponse.json({ success: true, data });

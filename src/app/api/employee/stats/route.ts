@@ -64,7 +64,7 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // 6. 客户等级统计（A/B/C/D 当前数量）
+    // 6. 客户等级统计（A/B/C/D 当前数量，NULL 兼容为 A）
     const { data: levelStats } = await supabase
       .from('customers')
       .select('customer_level')
@@ -72,15 +72,15 @@ export async function GET() {
 
     const levelCounts = { A: 0, B: 0, C: 0, D: 0 };
     if (levelStats) {
-      levelStats.forEach((c: { customer_level: string }) => {
-        const level = c.customer_level as 'A' | 'B' | 'C' | 'D';
+      levelStats.forEach((c: { customer_level: string | null }) => {
+        const level = (c.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
         if (level in levelCounts) {
           levelCounts[level]++;
         }
       });
     }
 
-    // 7. 今日新增客户 A/B/C/D 统计（按创建时的等级）
+    // 7. 今日新增客户 A/B/C/D 统计（按创建时的等级，NULL 兼容为 A）
     const { data: todayLevelStats } = await supabase
       .from('customers')
       .select('customer_level')
@@ -90,8 +90,8 @@ export async function GET() {
 
     const todayNewLevels = { A: 0, B: 0, C: 0, D: 0 };
     if (todayLevelStats) {
-      todayLevelStats.forEach((c: { customer_level: string }) => {
-        const level = c.customer_level as 'A' | 'B' | 'C' | 'D';
+      todayLevelStats.forEach((c: { customer_level: string | null }) => {
+        const level = (c.customer_level || 'A') as 'A' | 'B' | 'C' | 'D';
         if (level in todayNewLevels) {
           todayNewLevels[level]++;
         }

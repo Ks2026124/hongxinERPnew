@@ -360,60 +360,135 @@ export default function EmployeeDashboard() {
                     </div>
 
                     {/* 客户等级统计 */}
-                    {team.today_levels && (
-                      <div className="mb-4 pb-3 border-b">
-                        <p className="text-xs text-muted-foreground mb-2">今日客户等级分布</p>
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
-                            A类 {team.today_levels.A}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
-                            B类 {team.today_levels.B}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700">
-                            C类 {team.today_levels.C}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
-                            D类 {team.today_levels.D}
-                          </span>
+                    <div className="mb-4 pb-3 border-b space-y-3">
+                      {/* 今日新增 */}
+                      {team.today_levels && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1.5">今日新增</p>
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-medium">
+                              A +{team.today_levels.A}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-medium">
+                              B +{team.today_levels.B}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 font-medium">
+                              C +{team.today_levels.C}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium">
+                              D +{team.today_levels.D}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {/* 当前客户 */}
+                      {team.total_levels && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1.5">当前客户</p>
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 font-medium">
+                              A {team.total_levels.A}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 font-medium">
+                              B {team.total_levels.B}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700 font-medium">
+                              C {team.total_levels.C}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 font-medium">
+                              D {team.total_levels.D}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* 团队成员排行榜 */}
                     {team.members && team.members.length > 0 ? (
-                      <div className="space-y-2">
-                        {team.members.map((member, index) => (
-                          <div
-                            key={member.id}
-                            className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
-                          >
+                      <div className="space-y-3">
+                        {team.members.map((member, index) => {
+                          // 当前登录员工在自己的团队中高亮显示
+                          const isCurrentUser = team.team_id === allTeamsData?.my_team_id && 
+                            member.name === teamStats?.members.find(m => m.id === member.id)?.name;
+                          return (
                             <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                              key={member.id}
+                              className={`p-3 rounded-lg border ${
+                                isCurrentUser 
+                                  ? 'bg-primary/5 border-primary/20' 
+                                  : 'bg-background/50 border-border/50'
+                              }`}
                             >
-                              {index + 1}
-                            </div>
-                            <EmployeeAvatar 
-                              name={member.name} 
-                              src={avatarMap[member.id]} 
-                              size="sm"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{member.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                累计 {member.total_customers} 位
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary text-sm">+{member.today_customers}</p>
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
+                                >
+                                  {index + 1}
+                                </div>
+                                <EmployeeAvatar 
+                                  name={member.name} 
+                                  src={avatarMap[member.id]} 
+                                  size="sm"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium text-sm truncate">{member.name}</p>
+                                    {isCurrentUser && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                        我
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    累计 {member.total_customers} 位客户
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* 今日新增 A/B/C/D */}
                               {member.today_levels && (
-                                <p className="text-[10px] text-muted-foreground">
-                                  A{member.today_levels.A}|B{member.today_levels.B}|C{member.today_levels.C}|D{member.today_levels.D}
-                                </p>
+                                <div className="mt-2 pt-2 border-t border-border/30">
+                                  <p className="text-[10px] text-muted-foreground mb-1">今日新增</p>
+                                  <div className="flex gap-1.5 flex-wrap">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
+                                      A +{member.today_levels.A}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
+                                      B +{member.today_levels.B}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">
+                                      C +{member.today_levels.C}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 font-medium">
+                                      D +{member.today_levels.D}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* 当前客户 A/B/C/D */}
+                              {member.total_levels && (
+                                <div className="mt-2">
+                                  <p className="text-[10px] text-muted-foreground mb-1">当前客户</p>
+                                  <div className="flex gap-1.5 flex-wrap">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
+                                      A {member.total_levels.A}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
+                                      B {member.total_levels.B}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">
+                                      C {member.total_levels.C}
+                                    </span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">
+                                      D {member.total_levels.D}
+                                    </span>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-6 text-muted-foreground text-sm">

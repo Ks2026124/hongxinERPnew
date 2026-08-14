@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Image, Trophy, TrendingUp, Clock } from 'lucide-react';
+import { Users, Image, Trophy, TrendingUp, Clock, Building2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface EmployeeStats {
@@ -32,9 +32,25 @@ interface TeamStats {
   members: TeamMember[];
 }
 
+interface TeamPerformance {
+  team_id: number;
+  team_name: string;
+  team_code: string;
+  today_customers: number;
+  total_customers: number;
+  rank: number;
+}
+
+interface TeamPerformanceData {
+  my_team_id: number;
+  my_team_rank: TeamPerformance | null;
+  all_teams: TeamPerformance[];
+}
+
 export default function EmployeeDashboard() {
   const [stats, setStats] = useState<EmployeeStats | null>(null);
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null);
+  const [teamPerformance, setTeamPerformance] = useState<TeamPerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,14 +59,17 @@ export default function EmployeeDashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, teamRes] = await Promise.all([
+      const [statsRes, teamRes, perfRes] = await Promise.all([
         fetch('/api/employee/stats'),
         fetch('/api/employee/team-stats'),
+        fetch('/api/employee/team-performance'),
       ]);
       const statsData = await statsRes.json();
       const teamData = await teamRes.json();
+      const perfData = await perfRes.json();
       if (statsData.success) setStats(statsData.data);
       if (teamData.success) setTeamStats(teamData.data);
+      if (perfData.success) setTeamPerformance(perfData.data);
     } catch (err) {
       console.error('获取数据失败:', err);
     } finally {
@@ -138,6 +157,96 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 我的团队客户业绩 */}
+      {teamPerformance?.my_team_rank && (
+        <Card className="border-2 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              我的团队
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {teamPerformance.my_team_rank.team_name} - 客户业绩
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-primary">{teamPerformance.my_team_rank.today_customers}</p>
+                <p className="text-sm text-muted-foreground mt-1">今日新增</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold">{teamPerformance.my_team_rank.total_customers}</p>
+                <p className="text-sm text-muted-foreground mt-1">累计客户</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-yellow-600">#{teamPerformance.my_team_rank.rank}</p>
+                <p className="text-sm text-muted-foreground mt-1">团队排名</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 团队客户排行榜 */}
+      {teamPerformance?.all_teams && teamPerformance.all_teams.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-blue-500" />
+              团队客户排行榜
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              所有团队客户业绩对比
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {teamPerformance.all_teams.map((team, index) => {
+                const isMyTeam = teamPerformance.my_team_rank && team.team_id === teamPerformance.my_team_rank.team_id;
+                return (
+                  <div
+                    key={team.team_id}
+                    className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
+                      isMyTeam
+                        ? 'bg-primary/5 border-primary/30'
+                        : 'bg-background hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-sm font-bold">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold truncate">{team.team_name}</p>
+                        {isMyTeam && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                            我的团队
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {team.team_code}
+                      </p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div>
+                        <p className="text-lg font-bold text-primary">{team.today_customers}</p>
+                        <p className="text-xs text-muted-foreground">今日新增</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{team.total_customers}</p>
+                        <p className="text-xs text-muted-foreground">累计客户</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 团队排行榜 */}

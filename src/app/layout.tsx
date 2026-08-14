@@ -19,6 +19,14 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: '鸿信ERP',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', type: 'image/x-icon' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+    ],
+    apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,15 +45,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <head suppressHydrationWarning>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <PWAHead />
-      </head>
       <body className="antialiased" suppressHydrationWarning>
+        <PWAHead />
         {children}
         <Toaster position="top-right" />
       </body>

@@ -410,20 +410,12 @@ export default function EmployeeDashboard() {
                                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted-foreground/15 text-muted-foreground text-[10px] font-bold shrink-0">
                                   {mIdx + 1}
                                 </span>
-                                {/* 头像：employee.avatar → profile.avatar_url → 默认头像 */}
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={(member as { avatar?: string | null; avatar_url?: string | null }).avatar || member.avatar_url || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23e5e7eb'/><text x='50%25' y='54%25' font-size='16' text-anchor='middle' fill='%236b7280' font-family='sans-serif' font-weight='600'>${encodeURIComponent(member.name.slice(0,1))}</text></svg>`}
-                                  alt={member.name}
-                                  className="h-10 w-10 lg:h-12 lg:w-12 rounded-full object-cover shrink-0 border border-border bg-muted"
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    const el = e.currentTarget;
-                                    if (!el.dataset.fallback) {
-                                      el.dataset.fallback = '1';
-                                      el.src = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23e5e7eb'/><text x='50%25' y='54%25' font-size='16' text-anchor='middle' fill='%236b7280' font-family='sans-serif' font-weight='600'>${encodeURIComponent(member.name.slice(0,1))}</text></svg>`;
-                                    }
-                                  }}
+                                {/* 头像：employee.avatar → profile.avatar_url → 姓名首字默认头像（由 EmployeeAvatar 处理加载失败回退） */}
+                                <EmployeeAvatar
+                                  name={member.name}
+                                  src={avatarMap[member.id] ?? member.avatar_url}
+                                  size="md"
+                                  className="h-10 w-10 lg:h-12 lg:w-12 text-sm lg:text-base shrink-0 rounded-full"
                                 />
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">

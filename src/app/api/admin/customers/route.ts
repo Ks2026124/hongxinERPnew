@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const employeeId = searchParams.get('employee_id');
     const startDate = searchParams.get('start_date');
     const endDate = searchParams.get('end_date');
+    const customerLevel = searchParams.get('customer_level');
 
     const supabase = getSupabaseClient();
     
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest) {
     }
     if (employeeId && employeeId !== 'all') {
       query = query.eq('employee_id', parseInt(employeeId));
+    }
+    if (customerLevel && customerLevel !== 'all' && ['A', 'B', 'C', 'D'].includes(customerLevel)) {
+      query = query.eq('customer_level', customerLevel);
     }
     if (startDate) {
       // 直接使用带时区的字符串，避免 toISOString() 转换为 UTC 导致日期偏移

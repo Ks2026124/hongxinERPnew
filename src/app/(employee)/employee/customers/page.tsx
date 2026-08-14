@@ -39,8 +39,17 @@ interface Customer {
   phone: string | null;
   wechat_id: string | null;
   remark: string | null;
+  customer_level: 'A' | 'B' | 'C' | 'D' | null;
   created_at: string;
 }
+
+// 客户等级配置
+const CUSTOMER_LEVEL_CONFIG = {
+  A: { label: 'A类', desc: '新增客户', color: 'bg-blue-100 text-blue-700' },
+  B: { label: 'B类', desc: '深聊客户', color: 'bg-green-100 text-green-700' },
+  C: { label: 'C类', desc: '付费意向', color: 'bg-orange-100 text-orange-700' },
+  D: { label: 'D类', desc: '成交客户', color: 'bg-red-100 text-red-700' },
+};
 
 // 验证步骤状态
 type VerifyStep = 'upload' | 'verifying' | 'verified' | 'failed';
@@ -351,6 +360,7 @@ export default function EmployeeCustomersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>客户姓名</TableHead>
+                <TableHead>等级</TableHead>
                 <TableHead>手机号</TableHead>
                 <TableHead>微信号</TableHead>
                 <TableHead>备注</TableHead>
@@ -359,9 +369,17 @@ export default function EmployeeCustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.customer_name}</TableCell>
+              {customers.map((customer) => {
+                const level = customer.customer_level || 'A';
+                const levelConfig = CUSTOMER_LEVEL_CONFIG[level];
+                return (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.customer_name}</TableCell>
+                    <TableCell>
+                      <span className={`text-xs px-2 py-1 rounded ${levelConfig.color}`}>
+                        {levelConfig.label}
+                      </span>
+                    </TableCell>
                   <TableCell>
                     {customer.phone ? (
                       <span className="flex items-center gap-1">
@@ -409,7 +427,8 @@ export default function EmployeeCustomersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

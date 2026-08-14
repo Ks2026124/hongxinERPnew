@@ -63,10 +63,19 @@ interface Customer {
   remark: string | null;
   employee_id: number;
   team_id: number;
+  customer_level: 'A' | 'B' | 'C' | 'D' | null;
   created_at: string;
   employee: Employee | null;
   team: Team | null;
 }
+
+// 客户等级配置
+const CUSTOMER_LEVEL_CONFIG = {
+  A: { label: 'A类', desc: '新增客户', color: 'bg-blue-100 text-blue-700' },
+  B: { label: 'B类', desc: '深聊客户', color: 'bg-green-100 text-green-700' },
+  C: { label: 'C类', desc: '付费意向', color: 'bg-orange-100 text-orange-700' },
+  D: { label: 'D类', desc: '成交客户', color: 'bg-red-100 text-red-700' },
+};
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -90,6 +99,7 @@ export default function AdminCustomersPage() {
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterCustomerLevel, setFilterCustomerLevel] = useState<string>('');
   const [showImageGallery, setShowImageGallery] = useState(false);
 
   // 获取客户关联的员工 ID 列表
@@ -134,17 +144,19 @@ export default function AdminCustomersPage() {
     }
   };
 
-  const fetchCustomers = async (overrides?: { teamId?: string; employeeId?: string; startDate?: string; endDate?: string }) => {
+  const fetchCustomers = async (overrides?: { teamId?: string; employeeId?: string; startDate?: string; endDate?: string; customerLevel?: string }) => {
     try {
       const params = new URLSearchParams();
       const tId = overrides?.teamId !== undefined ? overrides.teamId : filterTeamId;
       const eId = overrides?.employeeId !== undefined ? overrides.employeeId : filterEmployeeId;
       const sDate = overrides?.startDate !== undefined ? overrides.startDate : filterStartDate;
       const eDate = overrides?.endDate !== undefined ? overrides.endDate : filterEndDate;
+      const cLevel = overrides?.customerLevel !== undefined ? overrides.customerLevel : filterCustomerLevel;
       if (tId && tId !== 'all') params.set('team_id', tId);
       if (eId && eId !== 'all') params.set('employee_id', eId);
       if (sDate) params.set('start_date', sDate);
       if (eDate) params.set('end_date', eDate);
+      if (cLevel && cLevel !== 'all') params.set('customer_level', cLevel);
 
       const res = await fetch(`/api/admin/customers?${params.toString()}`);
       const data = await res.json();
@@ -173,8 +185,9 @@ export default function AdminCustomersPage() {
     setFilterEmployeeId('');
     setFilterStartDate('');
     setFilterEndDate('');
+    setFilterCustomerLevel('');
     setLoading(true);
-    fetchCustomers({ teamId: '', employeeId: '', startDate: '', endDate: '' });
+    fetchCustomers({ teamId: '', employeeId: '', startDate: '', endDate: '', customerLevel: '' });
   };
 
   const handleEdit = async () => {
@@ -292,7 +305,7 @@ export default function AdminCustomersPage() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium">筛选条件</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="space-y-2">
             <Label>团队</Label>
             <Select value={filterTeamId} onValueChange={setFilterTeamId}>
@@ -322,6 +335,21 @@ export default function AdminCustomersPage() {
                     {emp.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>客户等级</Label>
+            <Select value={filterCustomerLevel} onValueChange={setFilterCustomerLevel}>
+              <SelectTrigger>
+                <SelectValue placeholder="全部等级" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部等级</SelectItem>
+                <SelectItem value="A">A类 - 新增客户</SelectItem>
+                <SelectItem value="B">B类 - 深聊客户</SelectItem>
+                <SelectItem value="C">C类 - 付费意向</SelectItem>
+                <SelectItem value="D">D类 - 成交客户</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -368,6 +396,7 @@ export default function AdminCustomersPage() {
                 <TableHead>客户姓名</TableHead>
                 <TableHead>手机号</TableHead>
                 <TableHead>微信号</TableHead>
+                <TableHead>等级</TableHead>
                 <TableHead>所属员工</TableHead>
                 <TableHead>所属团队</TableHead>
                 <TableHead>创建时间</TableHead>
@@ -380,6 +409,15 @@ export default function AdminCustomersPage() {
                   <TableCell className="font-medium">{customer.customer_name}</TableCell>
                   <TableCell>{customer.phone || '-'}</TableCell>
                   <TableCell>{customer.wechat_id || '-'}</TableCell>
+                  <TableCell>
+                    {customer.customer_level && CUSTOMER_LEVEL_CONFIG[customer.customer_level] ? (
+                      <Badge className={CUSTOMER_LEVEL_CONFIG[customer.customer_level].color}>
+                        {CUSTOMER_LEVEL_CONFIG[customer.customer_level].label}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">A类</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {customer.employee ? (

@@ -19,12 +19,21 @@ interface EmployeeStats {
   }>;
 }
 
+interface LevelStats {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+}
+
 interface TeamMember {
   id: number;
   name: string;
   avatar_url: string | null;
   today_customers: number;
   total_customers: number;
+  today_levels?: LevelStats;
+  total_levels?: LevelStats;
 }
 
 interface TeamStats {
@@ -41,6 +50,8 @@ interface AllTeamsData {
     team_code: string;
     today_customers: number;
     total_customers: number;
+    today_levels?: LevelStats;
+    total_levels?: LevelStats;
     members: TeamMember[];
   }>;
 }
@@ -332,6 +343,27 @@ export default function EmployeeDashboard() {
                       </div>
                     </div>
 
+                    {/* 客户等级统计 */}
+                    {team.today_levels && (
+                      <div className="mb-4 pb-3 border-b">
+                        <p className="text-xs text-muted-foreground mb-2">今日客户等级分布</p>
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                            A类 {team.today_levels.A}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                            B类 {team.today_levels.B}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700">
+                            C类 {team.today_levels.C}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                            D类 {team.today_levels.D}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 团队成员排行榜 */}
                     {team.members && team.members.length > 0 ? (
                       <div className="space-y-2">
@@ -358,7 +390,11 @@ export default function EmployeeDashboard() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-primary text-sm">+{member.today_customers}</p>
-                              <p className="text-xs text-muted-foreground">今日</p>
+                              {member.today_levels && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  A{member.today_levels.A}|B{member.today_levels.B}|C{member.today_levels.C}|D{member.today_levels.D}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}

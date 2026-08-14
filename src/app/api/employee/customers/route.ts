@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
         remark: remark?.trim() || null,
         employee_id: user.userId,
         team_id: user.teamId,
+        customer_level: 'A', // 新客户默认为 A 类
       })
       .select()
       .single();
@@ -106,6 +107,15 @@ export async function POST(request: NextRequest) {
       console.error('新增客户失败:', error);
       return NextResponse.json({ error: '新增客户失败' }, { status: 500 });
     }
+
+    // 记录等级变化日志（新建客户，从 null 到 A）
+    await supabase.from('customer_level_logs').insert({
+      customer_id: data.id,
+      employee_id: user.userId,
+      from_level: null,
+      to_level: 'A',
+      remark: '新建客户',
+    });
 
     // 标记验证记录为已使用，并关联客户
     await supabase

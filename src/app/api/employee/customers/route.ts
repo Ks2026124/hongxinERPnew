@@ -88,6 +88,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 校验所属团队（team_id 为 NOT NULL，不能依赖 JWT 中的旧值）
+    let teamId = user.teamId;
+    if (!teamId) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('team_id, status, is_deleted')
+        .eq('id', user.userId)
+        .maybeSingle();
+      if (profileError) {
+        console.error('[CREATE_CUSTOMER_API] 获取员工团队失败:', profileError);
+        return NextResponse.json({ error: '获取员工团队失败' }, { status: 500 });
+      }
+      if (!profile || profile.is_deleted) {
+        return NextResponse.json({ error: '员工账号不存在或已删除' }, { status: 403 });
+      }
+      if (profile.status !== 'active') {
+        return NextResponse.json({ error: '账号状态异常，无法新增客户' }, { status: 403 });
+      }
+      teamId = profile.team_id;
+    }
+    if (!teamId) {
+      console.error('[CREATE_CUSTOMER_API] team_id 为空', { userId: user.userId });
+      return NextResponse.json({ error: '当前员工未归属团队，无法新增客户' }, { status: 400 });
+    }
+
+    console.log('[CREATE_CUSTOMER_API] 创建客户', {
+      employee_id: user.userId,
+      team_id: teamId,
+      customer_name: customer_name.trim(),
+      wechat_id: wechat_id?.trim() || null,
+      has_phone: Boolean(phone?.trim()),
+      customer_level: 'A',
+    });
+
     // 创建客户
     const { data, error } = await supabase
       .from('customers')
@@ -97,41 +131,58 @@ export async function POST(request: NextRequest) {
         wechat_id: wechat_id?.trim() || null,
         remark: remark?.trim() || null,
         employee_id: user.userId,
-        team_id: user.teamId,
+        team_id: teamId,
         customer_level: 'A', // 新客户默认为 A 类
       })
       .select()
       .single();
 
     if (error) {
-      console.error('新增客户失败:', error);
-      return NextResponse.json({ error: '新增客户失败' }, { status: 500 });
+      console.error('[CREATE_CUSTOMER_API] Supabase insert 失败:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      return NextResponse.json(
+        { error: '新增客户失败', detail: error.message, code: error.code },
+        { status: 500 }
+      );
     }
 
-    // 记录等级变化日志（新建客户，从 null 到 A）
-    await supabase.from('customer_level_logs').insert({
+    // 记录等级变化日志（新建客户，从 null 到 A）。失败不影响主流程，但必须记录日志。
+    const { error: logError } = await supabase.from('customer_level_logs').insert({
       customer_id: data.id,
       employee_id: user.userId,
       from_level: null,
       to_level: 'A',
       remark: '新建客户',
     });
+    if (logError) {
+      console.error('[CREATE_CUSTOMER_API] customer_level_logs 插入失败:', logError);
+    }
 
     // 标记验证记录为已使用，并关联客户
-    await supabase
+    const { error: verificationUpdateError } = await supabase
       .from('wechat_verifications')
       .update({ status: 'used', used_at: new Date().toISOString(), customer_id: data.id })
       .eq('id', verification.id);
+    if (verificationUpdateError) {
+      console.error('[CREATE_CUSTOMER_API] 更新微信验证记录失败:', verificationUpdateError);
+    }
 
     // 将验证图片也记录到 customer_images 表（关联到新客户）
-    await supabase.from('customer_images').insert({
+    const { error: imageError } = await supabase.from('customer_images').insert({
       customer_id: data.id,
       employee_id: user.userId,
-      team_id: user.teamId,
+      team_id: teamId,
       image_url: verification.image_url,
       sha256: verification.sha256,
       phash: verification.phash,
     });
+    if (imageError) {
+      console.error('[CREATE_CUSTOMER_API] customer_images 插入失败:', imageError);
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (err) {

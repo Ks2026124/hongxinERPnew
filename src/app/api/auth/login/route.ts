@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Find user by username
     const { data: profile, error } = await client
       .from('profiles')
-      .select('id, username, password_hash, name, role, team_id, status, must_change_password')
+      .select('id, username, password_hash, name, role, team_id, status, is_deleted, must_change_password')
       .eq('username', username)
       .maybeSingle();
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查账号是否已被删除
-    if ((profile as any).is_deleted) {
+    if (profile.is_deleted) {
       return NextResponse.json(
         { error: '该账号已被删除，无法登录' },
         { status: 403 }

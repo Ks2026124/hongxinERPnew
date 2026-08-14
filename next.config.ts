@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
   },
   // sharp 原生模块在 Vercel Serverless 中需要外部化
   serverExternalPackages: ['sharp'],
+  // 显式指定 Turbopack 工作区根目录，避免多 lockfile 时误判到 /
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 export default nextConfig;

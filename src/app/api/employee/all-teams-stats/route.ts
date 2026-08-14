@@ -36,12 +36,16 @@ export async function GET() {
       });
     }
 
-    // 获取所有员工（不限制审核状态，保证历史客户数据完整）
+    // 只取当前有效员工：role=employee，未软删除（is_deleted 为 false 或 NULL 兼容旧数据），
+    // status != 'deleted'，deleted_at IS NULL。
+    // 已离职员工的历史客户仍保留在 customers 表，但不会出现在当前员工排名与统计中。
     const { data: allEmployees } = await supabase
       .from('profiles')
-      .select('id, name, avatar_url, team_id')
+      .select('id, name, avatar_url, team_id, status')
       .eq('role', 'employee')
-      .eq('is_deleted', false);
+      .neq('status', 'deleted')
+      .is('deleted_at', null)
+      .or('is_deleted.eq.false,is_deleted.is.null');
 
     if (!allEmployees || allEmployees.length === 0) {
       return NextResponse.json({
@@ -96,15 +100,10 @@ export async function GET() {
       totalCountMap[c.employee_id][level]++;
     }
 
-    // 按团队分组
-    // 重要：历史数据中员工 profiles.team_id 可能为 NULL，但客户 customers.team_id 是准确的
-    // 因此员工归属团队优先使用其客户的 team_id，兜底使用 profiles.team_id
+    // 按团队分组：员工归属以 profiles.team_id 为准；
+    // 已离职员工已在 allEmployees 查询时被过滤，不会出现，也不会被客户数据"带"回来。
     const teamStats = teams.map(team => {
-      // 属于该团队的员工：profiles.team_id = team.id，或有客户的 team_id = team.id
-      const teamEmployees = allEmployees.filter(e => {
-        if (e.team_id === team.id) return true;
-        return (allCustomers || []).some(c => c.employee_id === e.id && c.team_id === team.id);
-      });
+      const teamEmployees = allEmployees.filter(e => e.team_id === team.id);
       const memberIds = teamEmployees.map(m => m.id);
 
       // 团队成员统计（只统计 team_id = 当前团队的客户）

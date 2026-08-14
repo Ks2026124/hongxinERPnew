@@ -66,14 +66,47 @@ export async function GET() {
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     const todayEnd = `${tomorrowStr}T00:00:00+08:00`;
 
+    // 先查出各团队当前在职员工 id 集合，统计时只用这些 employee_id；
+    // 已离职员工的历史客户保留在 customers 表，但不计入团队当前业绩。
+    const teamActiveMembers = await Promise.all(
+      teams.map(async (team) => {
+        const { data: members, error: membersError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('team_id', team.id)
+          .eq('role', 'employee')
+          .neq('status', 'deleted')
+          .is('deleted_at', null)
+          .or('is_deleted.eq.false,is_deleted.is.null');
+
+        if (membersError) {
+          console.error(`[TEAM_PERFORMANCE] 获取团队 ${team.id} 成员失败:`, membersError);
+        }
+        return { team_id: team.id, member_ids: (members || []).map(m => m.id) };
+      })
+    );
+    const memberIdMap = new Map(teamActiveMembers.map(m => [m.team_id, m.member_ids]));
+
     // 获取每个团队的统计数据
     const teamStats = await Promise.all(
       teams.map(async (team) => {
+        const memberIds = memberIdMap.get(team.id) || [];
+        // 没有在职员工时直接返回 0，避免 in.() 空数组语义歧义
+        if (memberIds.length === 0) {
+          return {
+            team_id: team.id,
+            team_name: team.team_name,
+            team_code: team.team_code,
+            today_customers: 0,
+            total_customers: 0,
+          };
+        }
         // 今日新增客户
         const { count: todayCount, error: todayError } = await supabase
           .from('customers')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', team.id)
+          .in('employee_id', memberIds)
           .gte('created_at', todayStart)
           .lt('created_at', todayEnd);
 
@@ -85,7 +118,8 @@ export async function GET() {
         const { count: totalCount, error: totalError } = await supabase
           .from('customers')
           .select('*', { count: 'exact', head: true })
-          .eq('team_id', team.id);
+          .eq('team_id', team.id)
+          .in('employee_id', memberIds);
 
         if (totalError) {
           console.error(`[TEAM_PERFORMANCE] 获取团队 ${team.id} 累计数据失败:`, totalError);

@@ -38,13 +38,15 @@ export async function GET() {
       .eq('id', user.teamId)
       .single();
 
-    // 获取团队成员（active 状态）
+    // 获取团队当前有效成员：排除已软删除 / 已离职员工（历史客户数据保留在 customers 表）
     const { data: members } = await supabase
       .from('profiles')
-      .select('id, name, avatar_url')
+      .select('id, name, avatar_url, status, is_deleted')
       .eq('team_id', user.teamId)
       .eq('role', 'employee')
-      .eq('status', 'active');
+      .neq('status', 'deleted')
+      .is('deleted_at', null)
+      .or('is_deleted.eq.false,is_deleted.is.null');
 
     if (!members || members.length === 0) {
       return NextResponse.json({

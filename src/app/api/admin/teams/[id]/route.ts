@@ -33,12 +33,15 @@ export async function DELETE(
       return NextResponse.json({ error: '团队不存在' }, { status: 404 });
     }
 
-    // 检查团队是否有活跃员工（排除已删除的）
+    // 检查团队是否还有当前在职员工（排除已软删除/已离职）
     const { data: activeEmployees, error: countError } = await supabase
       .from('profiles')
       .select('id')
       .eq('team_id', teamId)
-      .eq('is_deleted', false)
+      .eq('role', 'employee')
+      .neq('status', 'deleted')
+      .is('deleted_at', null)
+      .or('is_deleted.eq.false,is_deleted.is.null')
       .limit(1);
 
     if (countError) throw countError;

@@ -18,17 +18,17 @@ interface EmployeeStats {
     customer_level?: string;
     created_at: string;
   }>;
-  level_stats: LevelStats;
-  today_levels: LevelStats;
+  level_counts: LevelStats;
+  today_new_levels: LevelStats;
   transitions: {
-    AB: number;
-    BC: number;
-    CD: number;
+    A_to_B: number;
+    B_to_C: number;
+    C_to_D: number;
   };
   today_transitions: {
-    AB: number;
-    BC: number;
-    CD: number;
+    A_to_B: number;
+    B_to_C: number;
+    C_to_D: number;
   };
 }
 
@@ -45,7 +45,7 @@ interface TeamMember {
   avatar_url: string | null;
   today_customers: number;
   total_customers: number;
-  today_levels?: LevelStats;
+  today_new_levels?: LevelStats;
   total_levels?: LevelStats;
 }
 
@@ -63,7 +63,7 @@ interface AllTeamsData {
     team_code: string;
     today_customers: number;
     total_customers: number;
-    today_levels?: LevelStats;
+    today_new_levels?: LevelStats;
     total_levels?: LevelStats;
     members: TeamMember[];
   }>;
@@ -189,9 +189,9 @@ export default function EmployeeDashboard() {
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700">{stats?.level_stats?.A ?? 0}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats?.level_counts?.A ?? 0}</div>
             <p className="text-xs text-blue-600 mt-1">新增客户</p>
-            <p className="text-xs text-blue-500 mt-1">今日 +{stats?.today_levels?.A ?? 0}</p>
+            <p className="text-xs text-blue-500 mt-1">今日 +{stats?.today_new_levels?.A ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -201,9 +201,9 @@ export default function EmployeeDashboard() {
             <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700">{stats?.level_stats?.B ?? 0}</div>
+            <div className="text-2xl font-bold text-green-700">{stats?.level_counts?.B ?? 0}</div>
             <p className="text-xs text-green-600 mt-1">深聊客户</p>
-            <p className="text-xs text-green-500 mt-1">今日 +{stats?.today_levels?.B ?? 0}</p>
+            <p className="text-xs text-green-500 mt-1">今日 +{stats?.today_new_levels?.B ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -213,9 +213,9 @@ export default function EmployeeDashboard() {
             <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-700">{stats?.level_stats?.C ?? 0}</div>
+            <div className="text-2xl font-bold text-orange-700">{stats?.level_counts?.C ?? 0}</div>
             <p className="text-xs text-orange-600 mt-1">付费意向</p>
-            <p className="text-xs text-orange-500 mt-1">今日 +{stats?.today_levels?.C ?? 0}</p>
+            <p className="text-xs text-orange-500 mt-1">今日 +{stats?.today_new_levels?.C ?? 0}</p>
           </CardContent>
         </Card>
 
@@ -225,9 +225,9 @@ export default function EmployeeDashboard() {
             <Trophy className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-700">{stats?.level_stats?.D ?? 0}</div>
+            <div className="text-2xl font-bold text-purple-700">{stats?.level_counts?.D ?? 0}</div>
             <p className="text-xs text-purple-600 mt-1">成交客户</p>
-            <p className="text-xs text-purple-500 mt-1">今日 +{stats?.today_levels?.D ?? 0}</p>
+            <p className="text-xs text-purple-500 mt-1">今日 +{stats?.today_new_levels?.D ?? 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -245,41 +245,41 @@ export default function EmployeeDashboard() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-blue-700">A类</p>
               <div className="text-sm space-y-1">
-                <p className="text-green-600">新增 +{stats?.today_levels?.A ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.AB ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_stats?.A ?? 0}</p>
+                <p className="text-green-600">新增 +{stats?.today_new_levels?.A ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.A_to_B ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.A ?? 0}</p>
               </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium text-green-700">B类</p>
               <div className="text-sm space-y-1">
-                <p className="text-blue-600">转入 +{stats?.today_transitions?.AB ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.BC ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_stats?.B ?? 0}</p>
+                <p className="text-blue-600">转入 +{stats?.today_transitions?.A_to_B ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.B_to_C ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.B ?? 0}</p>
               </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium text-orange-700">C类</p>
               <div className="text-sm space-y-1">
-                <p className="text-green-600">转入 +{stats?.today_transitions?.BC ?? 0}</p>
-                <p className="text-orange-600">转出 -{(stats?.today_transitions?.CD ?? 0)}</p>
-                <p className="font-medium">当前 {stats?.level_stats?.C ?? 0}</p>
+                <p className="text-green-600">转入 +{stats?.today_transitions?.B_to_C ?? 0}</p>
+                <p className="text-orange-600">转出 -{(stats?.today_transitions?.C_to_D ?? 0)}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.C ?? 0}</p>
               </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium text-purple-700">D类</p>
               <div className="text-sm space-y-1">
-                <p className="text-green-600">转入 +{stats?.today_transitions?.CD ?? 0}</p>
-                <p className="font-medium">当前 {stats?.level_stats?.D ?? 0}</p>
+                <p className="text-green-600">转入 +{stats?.today_transitions?.C_to_D ?? 0}</p>
+                <p className="font-medium">当前 {stats?.level_counts?.D ?? 0}</p>
               </div>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t">
             <p className="text-sm text-muted-foreground">今日转化</p>
             <div className="flex gap-4 mt-2 text-sm">
-              <span className="text-blue-600">A→B: {stats?.today_transitions?.AB ?? 0}</span>
-              <span className="text-green-600">B→C: {stats?.today_transitions?.BC ?? 0}</span>
-              <span className="text-orange-600">C→D: {stats?.today_transitions?.CD ?? 0}</span>
+              <span className="text-blue-600">A→B: {stats?.today_transitions?.A_to_B ?? 0}</span>
+              <span className="text-green-600">B→C: {stats?.today_transitions?.B_to_C ?? 0}</span>
+              <span className="text-orange-600">C→D: {stats?.today_transitions?.C_to_D ?? 0}</span>
             </div>
           </div>
         </CardContent>
@@ -430,21 +430,21 @@ export default function EmployeeDashboard() {
                     {/* 客户等级统计 */}
                     <div className="mb-4 pb-3 border-b space-y-3">
                       {/* 今日新增 */}
-                      {team.today_levels && (
+                      {team.today_new_levels && (
                         <div>
                           <p className="text-xs text-muted-foreground mb-1.5">今日新增</p>
                           <div className="flex gap-2 flex-wrap">
                             <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-medium">
-                              A +{team.today_levels.A}
+                              A +{team.today_new_levels.A}
                             </span>
                             <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-medium">
-                              B +{team.today_levels.B}
+                              B +{team.today_new_levels.B}
                             </span>
                             <span className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 font-medium">
-                              C +{team.today_levels.C}
+                              C +{team.today_new_levels.C}
                             </span>
                             <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium">
-                              D +{team.today_levels.D}
+                              D +{team.today_new_levels.D}
                             </span>
                           </div>
                         </div>
@@ -514,21 +514,21 @@ export default function EmployeeDashboard() {
                               </div>
                               
                               {/* 今日新增 A/B/C/D */}
-                              {member.today_levels && (
+                              {member.today_new_levels && (
                                 <div className="mt-2 pt-2 border-t border-border/30">
                                   <p className="text-[10px] text-muted-foreground mb-1">今日新增</p>
                                   <div className="flex gap-1.5 flex-wrap">
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
-                                      A +{member.today_levels.A}
+                                      A +{member.today_new_levels.A}
                                     </span>
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
-                                      B +{member.today_levels.B}
+                                      B +{member.today_new_levels.B}
                                     </span>
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">
-                                      C +{member.today_levels.C}
+                                      C +{member.today_new_levels.C}
                                     </span>
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 font-medium">
-                                      D +{member.today_levels.D}
+                                      D +{member.today_new_levels.D}
                                     </span>
                                   </div>
                                 </div>

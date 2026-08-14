@@ -18,14 +18,18 @@ export async function GET() {
     // 使用数据库服务器时间获取今日日期
     const { data: nowData } = await supabase.rpc('now' as any).single();
     const serverNow = nowData ? new Date(nowData as string) : new Date();
-    const todayStr = serverNow.toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(serverNow);
     
     // 本周一
     const today = new Date(serverNow);
     const dayOfWeek = today.getDay() || 7; // 周日为7
     const monday = new Date(today);
     monday.setDate(today.getDate() - dayOfWeek + 1);
-    const weekStartStr = monday.toISOString().split('T')[0];
+    const weekStartStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(monday);
 
     // 1. 今日新增客户数
     const { count: todayCustomers } = await supabase
@@ -130,6 +134,7 @@ export async function GET() {
         level_counts: levelCounts,
         today_new_levels: todayNewLevels,
         transitions: transitions,
+        today_transitions: transitions,
       },
     });
   } catch (err) {

@@ -82,13 +82,16 @@ export async function PUT(
       D: '成交客户',
     };
 
-    await supabase.from('customer_level_logs').insert({
+    const { error: logError } = await supabase.from('customer_level_logs').insert({
       customer_id: customerId,
       employee_id: user.userId,
       from_level: fromLevel,
       to_level: customer_level,
       remark: `${fromLevel} → ${customer_level} (${levelNames[customer_level]})`,
     });
+    if (logError) {
+      console.error('[LEVEL_CHANGE_LOG] insert failed:', JSON.stringify(logError));
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (err) {

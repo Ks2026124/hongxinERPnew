@@ -24,10 +24,10 @@ function getDateRange(range: string | null, customStart?: string | null, customE
     end = new Date(customEnd + 'T00:00:00');
   }
 
-  return {
-    startStr: start.toISOString().split('T')[0],
-    endStr: end.toISOString().split('T')[0],
-  };
+  const fmt = (d: Date) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(d);
+  return { startStr: fmt(start), endStr: fmt(end) };
 }
 
 // GET /api/admin/stats - 管理员统计（所有团队）

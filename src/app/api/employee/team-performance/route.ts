@@ -59,7 +59,7 @@ export async function GET() {
 
     // 获取今天的日期范围（使用服务器时区）
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(today);
     const todayStart = `${todayStr}T00:00:00+08:00`;
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);

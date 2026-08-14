@@ -29,7 +29,7 @@ export async function GET() {
     // 获取服务器时间
     const { data: nowData } = await supabase.rpc('now' as any).single();
     const serverNow = nowData ? new Date(nowData as string) : new Date();
-    const todayStr = serverNow.toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(serverNow);
 
     // 获取团队信息
     const { data: team } = await supabase

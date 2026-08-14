@@ -171,6 +171,7 @@ export default function EmployeeCustomersPage() {
         body: JSON.stringify({ ...formData, verification_id: verificationId }),
       });
       const data = await res.json();
+      console.log('[CREATE_CUSTOMER_FE] response:', { status: res.status, ok: res.ok, data });
       if (data.success) {
         setShowAddDialog(false);
         setFormData({ customer_name: '', phone: '', wechat_id: '', remark: '' });
@@ -179,7 +180,9 @@ export default function EmployeeCustomersPage() {
         setMessage('客户添加成功');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage(data.error || '添加失败');
+        const detail = data.detail ? ` (${data.detail})` : '';
+        const code = data.code ? ` [${data.code}]` : '';
+        setMessage((data.error || '添加失败') + detail + code);
       }
     } catch {
       setMessage('网络错误');

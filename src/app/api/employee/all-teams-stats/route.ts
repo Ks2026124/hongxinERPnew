@@ -36,13 +36,12 @@ export async function GET() {
       });
     }
 
-    // 获取所有活跃员工（属于某个团队的）
+    // 获取所有员工（不限制审核状态，保证历史客户数据完整）
     const { data: allEmployees } = await supabase
       .from('profiles')
       .select('id, name, avatar_url, team_id')
       .eq('role', 'employee')
-      .eq('status', 'active')
-      .not('team_id', 'is', null);
+      .eq('is_deleted', false);
 
     if (!allEmployees || allEmployees.length === 0) {
       return NextResponse.json({
@@ -63,18 +62,18 @@ export async function GET() {
 
     const allEmployeeIds = allEmployees.map(e => e.id);
 
-    // 获取每个员工今日新增客户数（按等级分组）
+    // 获取每个员工今日新增客户数（按等级分组，历史空等级默认 A）
     const { data: todayCustomers } = await supabase
       .from('customers')
-      .select('employee_id, customer_level')
+      .select('employee_id, team_id, customer_level')
       .in('employee_id', allEmployeeIds)
       .gte('created_at', todayStr + 'T00:00:00')
       .lte('created_at', todayStr + 'T23:59:59');
 
-    // 获取每个员工累计客户数（按等级分组）
+    // 获取每个员工累计客户数（按等级分组，历史空等级默认 A）
     const { data: allCustomers } = await supabase
       .from('customers')
-      .select('employee_id, customer_level')
+      .select('employee_id, team_id, customer_level')
       .in('employee_id', allEmployeeIds);
 
     // 统计每个员工的客户数（按等级分组）
@@ -98,14 +97,30 @@ export async function GET() {
     }
 
     // 按团队分组
+    // 重要：历史数据中员工 profiles.team_id 可能为 NULL，但客户 customers.team_id 是准确的
+    // 因此员工归属团队优先使用其客户的 team_id，兜底使用 profiles.team_id
     const teamStats = teams.map(team => {
-      const teamMembers = allEmployees.filter(e => e.team_id === team.id);
-      const memberIds = teamMembers.map(m => m.id);
+      // 属于该团队的员工：profiles.team_id = team.id，或有客户的 team_id = team.id
+      const teamEmployees = allEmployees.filter(e => {
+        if (e.team_id === team.id) return true;
+        return (allCustomers || []).some(c => c.employee_id === e.id && c.team_id === team.id);
+      });
+      const memberIds = teamEmployees.map(m => m.id);
 
-      // 团队成员统计
-      const memberStats = teamMembers.map(m => {
-        const today = todayCountMap[m.id];
-        const total = totalCountMap[m.id];
+      // 团队成员统计（只统计 team_id = 当前团队的客户）
+      const memberStats = teamEmployees.map(m => {
+        const today: LevelStats = { A: 0, B: 0, C: 0, D: 0 };
+        const total: LevelStats = { A: 0, B: 0, C: 0, D: 0 };
+        for (const c of todayCustomers || []) {
+          if (c.employee_id === m.id && c.team_id === team.id) {
+            today[(c.customer_level || 'A') as keyof LevelStats]++;
+          }
+        }
+        for (const c of allCustomers || []) {
+          if (c.employee_id === m.id && c.team_id === team.id) {
+            total[(c.customer_level || 'A') as keyof LevelStats]++;
+          }
+        }
         const todayTotal = today.A + today.B + today.C + today.D;
         const totalAll = total.A + total.B + total.C + total.D;
         return {

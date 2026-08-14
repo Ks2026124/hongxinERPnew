@@ -59,24 +59,24 @@ export async function GET(request: NextRequest) {
 
     const teamIds = teams.map(t => t.id);
 
+    // 统计客户时需包含所有未删除员工（含 pending/rejected），
+    // 否则历史客户会因员工未激活或不在团队中而从统计中消失
     const { data: employees } = await supabase
       .from('profiles')
-      .select('id, name, team_id, avatar_url')
-      .eq('role', 'employee')
-      .eq('status', 'active')
-      .in('team_id', teamIds);
+      .select('id, name, team_id, avatar_url, role')
+      .eq('is_deleted', false);
 
+    // 客户查询不能强制要求 team_id 在 teamIds 中，
+    // 因为历史客户可能 team_id 为 NULL/0 或关联到被删除的团队
     const { data: rangeCustomers } = await supabase
       .from('customers')
       .select('employee_id, team_id, customer_level, created_at')
-      .in('team_id', teamIds)
       .gte('created_at', rangeStart)
       .lte('created_at', rangeEnd);
 
     const { data: allCustomers } = await supabase
       .from('customers')
-      .select('employee_id, team_id, customer_level')
-      .in('team_id', teamIds);
+      .select('employee_id, team_id, customer_level');
 
     const { data: rangeTransitions } = await supabase
       .from('customer_level_logs')
@@ -109,6 +109,18 @@ export async function GET(request: NextRequest) {
       empLevelMap[emp.id] = emptyLevels();
       empTodayLevelMap[emp.id] = emptyLevels();
       empTransitionMap[emp.id] = emptyTransitions();
+    }
+
+    // 兼容历史数据：客户表中可能存在 profiles 已不存在或未加载的 employee_id，
+    // 这些员工也要初始化统计容器，避免数据丢失
+    for (const c of [...(rangeCustomers || []), ...(allCustomers || [])]) {
+      if (c.employee_id && !(c.employee_id in empTotalMap)) {
+        empTodayMap[c.employee_id] = 0;
+        empTotalMap[c.employee_id] = 0;
+        empLevelMap[c.employee_id] = emptyLevels();
+        empTodayLevelMap[c.employee_id] = emptyLevels();
+        empTransitionMap[c.employee_id] = emptyTransitions();
+      }
     }
 
     for (const c of rangeCustomers || []) {
@@ -150,18 +162,33 @@ export async function GET(request: NextRequest) {
     }
 
     const teamStats = teams.map(t => {
-      const teamEmployees = (employees || [])
-        .filter(e => e.team_id === t.id)
-        .map(e => ({
-          id: e.id,
-          name: e.name,
-          avatar_url: e.avatar_url,
-          today_customers: empTodayMap[e.id] || 0,
-          total_customers: empTotalMap[e.id] || 0,
-          level_stats: empLevelMap[e.id] || emptyLevels(),
-          today_level_stats: empTodayLevelMap[e.id] || emptyLevels(),
-          transitions: empTransitionMap[e.id] || emptyTransitions(),
-        }))
+      // 员工在团队中的归属：优先按 profiles.team_id，同时兼容历史员工
+      // （pending/rejected/team_id 为 NULL）如果该员工有客户属于此团队，也归入此团队展示
+      const teamEmployeeIds = new Set<number>(
+        (employees || [])
+          .filter(e => e.team_id === t.id)
+          .map(e => e.id),
+      );
+      for (const c of allCustomers || []) {
+        if (c.team_id === t.id && c.employee_id) {
+          teamEmployeeIds.add(c.employee_id);
+        }
+      }
+
+      const teamEmployees = Array.from(teamEmployeeIds)
+        .map(empId => {
+          const emp = (employees || []).find(e => e.id === empId);
+          return {
+            id: empId,
+            name: emp?.name || `员工#${empId}`,
+            avatar_url: emp?.avatar_url || null,
+            today_customers: empTodayMap[empId] || 0,
+            total_customers: empTotalMap[empId] || 0,
+            level_stats: empLevelMap[empId] || emptyLevels(),
+            today_level_stats: empTodayLevelMap[empId] || emptyLevels(),
+            transitions: empTransitionMap[empId] || emptyTransitions(),
+          };
+        })
         .sort((a, b) => {
           if (b.today_customers !== a.today_customers) return b.today_customers - a.today_customers;
           return b.total_customers - a.total_customers;

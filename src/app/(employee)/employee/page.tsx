@@ -224,12 +224,12 @@ export default function EmployeeDashboard() {
         )}
 
         {/* 2. 客户等级统计（PC 四列紧凑卡片，手机 2×2） */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {([
-            { key: 'A', label: 'A类客户', sub: '新增客户', color: 'blue', Icon: Users },
-            { key: 'B', label: 'B类客户', sub: '深聊客户', color: 'green', Icon: Users },
-            { key: 'C', label: 'C类客户', sub: '付费意向', color: 'orange', Icon: TrendingUp },
-            { key: 'D', label: 'D类客户', sub: '成交客户', color: 'purple', Icon: Trophy },
+            { key: 'A', label: 'A类', sub: '新增', color: 'blue', Icon: Users },
+            { key: 'B', label: 'B类', sub: '深聊', color: 'green', Icon: Users },
+            { key: 'C', label: 'C类', sub: '意向', color: 'orange', Icon: TrendingUp },
+            { key: 'D', label: 'D类', sub: '成交', color: 'purple', Icon: Trophy },
           ] as const).map(({ key, label, sub, color, Icon }) => {
             const colorMap: Record<string, { card: string; num: string; sub: string; today: string; icon: string }> = {
               blue:   { card: 'bg-blue-50/60 border-blue-200',   num: 'text-blue-700',   sub: 'text-blue-600/80',   today: 'text-blue-600',   icon: 'text-blue-600' },
@@ -241,41 +241,45 @@ export default function EmployeeDashboard() {
             const count = stats?.level_counts?.[key] ?? 0;
             const today = stats?.today_new_levels?.[key] ?? 0;
             return (
-              <Card key={key} className={c.card}>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className={`text-xs sm:text-sm font-medium ${c.num}`}>{label}</p>
-                      <p className={`text-[11px] sm:text-xs ${c.sub} truncate`}>{sub}</p>
-                    </div>
-                    <Icon className={`h-4 w-4 ${c.icon} shrink-0`} />
+              <div key={key} className={`rounded-md border px-3 py-2 flex items-center justify-between gap-2 ${c.card}`}>
+                <div className="min-w-0">
+                  <p className={`text-[11px] lg:text-xs font-semibold ${c.num}`}>
+                    <Icon className="inline h-3 w-3 mr-1 -mt-0.5" />
+                    {label}
+                    <span className={`ml-1 font-normal ${c.sub}`}>· {sub}</span>
+                  </p>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className={`text-xl lg:text-2xl font-bold leading-none ${c.num}`}>{count}</span>
+                    <span className={`text-[10px] lg:text-[11px] ${c.today}`}>今日 +{today}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className={`text-2xl sm:text-3xl font-bold leading-none ${c.num}`}>{count}</span>
-                    <span className={`text-[11px] sm:text-xs ${c.today}`}>今日 +{today}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
 
-        {/* 3. 今日客户变化（PC 四列紧凑，手机纵向列表） */}
+        {/* 3. 今日客户变化（PC 横向单行，手机纵向列表） */}
         <Card>
-          <CardHeader className="pb-2 px-4 sm:px-6 pt-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              今日客户变化
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 sm:px-6 pb-4 pt-0">
-            {/* PC：横向四列，每个等级一行 */}
-            <div className="hidden lg:grid grid-cols-4 gap-3">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                今日客户变化
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                <span>转化</span>
+                <span className="text-blue-600">A→B {stats?.today_transitions?.A_to_B ?? 0}</span>
+                <span className="text-green-600">B→C {stats?.today_transitions?.B_to_C ?? 0}</span>
+                <span className="text-orange-600">C→D {stats?.today_transitions?.C_to_D ?? 0}</span>
+              </div>
+            </div>
+            {/* PC：横向四列 */}
+            <div className="hidden lg:grid grid-cols-4 gap-2">
               {([
-                { key: 'A', color: 'blue',   in: stats?.today_new_levels?.A ?? 0,                                          out: stats?.today_transitions?.A_to_B ?? 0 },
-                { key: 'B', color: 'green',  in: stats?.today_transitions?.A_to_B ?? 0,                                  out: stats?.today_transitions?.B_to_C ?? 0 },
-                { key: 'C', color: 'orange', in: stats?.today_transitions?.B_to_C ?? 0,                                  out: stats?.today_transitions?.C_to_D ?? 0 },
-                { key: 'D', color: 'purple', in: stats?.today_transitions?.C_to_D ?? 0,                                  out: 0 },
+                { key: 'A', color: 'blue',   in: stats?.today_new_levels?.A ?? 0,            out: stats?.today_transitions?.A_to_B ?? 0 },
+                { key: 'B', color: 'green',  in: stats?.today_transitions?.A_to_B ?? 0,    out: stats?.today_transitions?.B_to_C ?? 0 },
+                { key: 'C', color: 'orange', in: stats?.today_transitions?.B_to_C ?? 0,    out: stats?.today_transitions?.C_to_D ?? 0 },
+                { key: 'D', color: 'purple', in: stats?.today_transitions?.C_to_D ?? 0,    out: 0 },
               ] as const).map(({ key, color, in: inn, out }) => {
                 const map: Record<string,string> = {
                   blue:'border-blue-200 text-blue-700 bg-blue-50/40',
@@ -284,14 +288,12 @@ export default function EmployeeDashboard() {
                   purple:'border-purple-200 text-purple-700 bg-purple-50/40',
                 };
                 return (
-                  <div key={key} className={`rounded-md border px-3 py-2 ${map[color]}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">{key}类</span>
-                      <span className="text-sm font-bold">当前 {stats?.level_counts?.[key] ?? 0}</span>
-                    </div>
-                    <div className="mt-1 flex gap-3 text-xs">
-                      <span className="text-green-600">入 +{inn}</span>
-                      {out > 0 && <span className="text-orange-600">出 -{out}</span>}
+                  <div key={key} className={`rounded-md border px-3 py-1.5 flex items-center justify-between ${map[color]}`}>
+                    <span className="text-xs font-semibold">{key}类</span>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="text-green-600">+{inn}</span>
+                      <span className="text-orange-600">-{out}</span>
+                      <span className="text-foreground font-medium">当前{stats?.level_counts?.[key] ?? 0}</span>
                     </div>
                   </div>
                 );
@@ -305,21 +307,15 @@ export default function EmployeeDashboard() {
                 { key: 'C', color: 'text-orange-700', in: stats?.today_transitions?.B_to_C ?? 0,  out: stats?.today_transitions?.C_to_D ?? 0 },
                 { key: 'D', color: 'text-purple-700', in: stats?.today_transitions?.C_to_D ?? 0,  out: 0 },
               ] as const).map(({ key, color, in: inn, out }) => (
-                <div key={key} className="flex items-center justify-between py-2 text-sm">
+                <div key={key} className="flex items-center justify-between py-1.5 text-sm">
                   <span className={`font-semibold ${color}`}>{key}类</span>
                   <div className="flex items-center gap-3 text-xs">
                     <span className="text-green-600">入 +{inn}</span>
-                    {out > 0 ? <span className="text-orange-600">出 -{out}</span> : <span className="text-muted-foreground/50">出 -0</span>}
+                    <span className="text-orange-600">出 -{out}</span>
                     <span className="font-medium text-foreground min-w-[3.5rem] text-right">当前 {stats?.level_counts?.[key] ?? 0}</span>
                   </div>
                 </div>
               ))}
-            </div>
-            <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>今日转化</span>
-              <span className="text-blue-600">A→B {stats?.today_transitions?.A_to_B ?? 0}</span>
-              <span className="text-green-600">B→C {stats?.today_transitions?.B_to_C ?? 0}</span>
-              <span className="text-orange-600">C→D {stats?.today_transitions?.C_to_D ?? 0}</span>
             </div>
           </CardContent>
         </Card>
@@ -328,53 +324,58 @@ export default function EmployeeDashboard() {
       {/* 团队客户排行榜 */}
       {teamPerformance?.all_teams && teamPerformance.all_teams.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-blue-500" />
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="h-4 w-4 text-blue-500" />
               团队客户排行榜
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              所有团队客户业绩对比
-            </p>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {teamPerformance.all_teams.map((team, index) => {
                 const isMyTeam = teamPerformance.my_team_rank && team.team_id === teamPerformance.my_team_rank.team_id;
+                const teamWithLevels = allTeamsData?.teams?.find((t) => t.team_id === team.team_id);
+                const levels = teamWithLevels?.total_levels ?? { A: 0, B: 0, C: 0, D: 0 };
                 return (
                   <div
                     key={team.team_id}
-                    className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
+                    className={`flex items-center gap-2.5 p-2.5 rounded-md border transition-colors ${
                       isMyTeam
-                        ? 'bg-primary/5 border-primary/30'
-                        : 'bg-background hover:bg-muted/50'
+                        ? 'border-blue-200 bg-blue-50/60'
+                        : 'bg-background hover:bg-muted/40'
                     }`}
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-sm font-bold">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500 text-white text-xs font-bold shrink-0">
+                      {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{team.team_name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-semibold text-sm truncate">{team.team_name}</p>
+                        <span className="text-[10px] text-muted-foreground font-mono">{team.team_code}</span>
                         {isMyTeam && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            我的团队
-                          </span>
+                          <span className="text-[10px] font-bold bg-blue-600 text-white px-1.5 py-px rounded">我</span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {team.team_code}
-                      </p>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
+                        <span>今日 <b className="text-foreground">{team.today_customers}</b></span>
+                        <span>累计 <b className="text-foreground">{team.total_customers}</b></span>
+                      </div>
                     </div>
-                    <div className="text-right space-y-1">
-                      <div>
-                        <p className="text-lg font-bold text-primary">{team.today_customers}</p>
-                        <p className="text-xs text-muted-foreground">今日新增</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{team.total_customers}</p>
-                        <p className="text-xs text-muted-foreground">累计客户</p>
-                      </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {(['A','B','C','D'] as const).map((lv) => (
+                        <span
+                          key={lv}
+                          className={`inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                            lv === 'A' ? 'bg-blue-50 text-blue-700'
+                            : lv === 'B' ? 'bg-green-50 text-green-700'
+                            : lv === 'C' ? 'bg-orange-50 text-orange-700'
+                            : 'bg-purple-50 text-purple-700'
+                          }`}
+                        >
+                          <span>{lv}</span>
+                          <span>{levels[lv]}</span>
+                        </span>
+                      ))}
                     </div>
                   </div>
                 );
@@ -384,210 +385,6 @@ export default function EmployeeDashboard() {
         </Card>
       )}
 
-      {/* 团队排行榜 - 显示所有团队 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-blue-500" />
-            团队排行榜
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            查看所有团队的今日动态和业绩对比
-          </p>
-        </CardHeader>
-        <CardContent>
-          {allTeamsData?.teams && allTeamsData.teams.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {allTeamsData.teams.map((team) => {
-                const isMyTeam = team.team_id === allTeamsData.my_team_id;
-                return (
-                  <div 
-                    key={team.team_id} 
-                    className={`rounded-xl border-2 p-4 ${
-                      isMyTeam 
-                        ? 'border-primary/30 bg-primary/5' 
-                        : 'border-border bg-card'
-                    }`}
-                  >
-                    {/* 团队头部 */}
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-lg">{team.team_name}</h3>
-                          {isMyTeam && (
-                            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                              我的团队
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{team.team_code}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">今日新增</p>
-                            <p className="text-xl font-bold text-primary">{team.today_customers}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">累计客户</p>
-                            <p className="text-xl font-bold">{team.total_customers}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 客户等级统计 */}
-                    <div className="mb-4 pb-3 border-b space-y-3">
-                      {/* 今日新增 */}
-                      {team.today_new_levels && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1.5">今日新增</p>
-                          <div className="flex gap-2 flex-wrap">
-                            <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-medium">
-                              A +{team.today_new_levels.A}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-medium">
-                              B +{team.today_new_levels.B}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 font-medium">
-                              C +{team.today_new_levels.C}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium">
-                              D +{team.today_new_levels.D}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {/* 当前客户 */}
-                      {team.total_levels && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1.5">当前客户</p>
-                          <div className="flex gap-2 flex-wrap">
-                            <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 font-medium">
-                              A {team.total_levels.A}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 font-medium">
-                              B {team.total_levels.B}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700 font-medium">
-                              C {team.total_levels.C}
-                            </span>
-                            <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 font-medium">
-                              D {team.total_levels.D}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 团队成员排行榜 */}
-                    {team.members && team.members.length > 0 ? (
-                      <div className="space-y-3">
-                        {team.members.map((member, index) => {
-                          // 当前登录员工在自己的团队中高亮显示
-                          const isCurrentUser = team.team_id === allTeamsData?.my_team_id && 
-                            member.name === teamStats?.members.find(m => m.id === member.id)?.name;
-                          const lv = member.total_levels ?? { A: 0, B: 0, C: 0, D: 0 };
-                          const levelBadges: Array<{ key: 'A' | 'B' | 'C' | 'D'; label: string; chip: string; num: string }> = [
-                            { key: 'A', label: 'A', chip: 'bg-blue-50 text-blue-700 border-blue-200',     num: 'text-blue-700' },
-                            { key: 'B', label: 'B', chip: 'bg-green-50 text-green-700 border-green-200', num: 'text-green-700' },
-                            { key: 'C', label: 'C', chip: 'bg-orange-50 text-orange-700 border-orange-200', num: 'text-orange-700' },
-                            { key: 'D', label: 'D', chip: 'bg-red-50 text-red-700 border-red-200',     num: 'text-red-700' },
-                          ];
-                          return (
-                            <div
-                              key={member.id}
-                              className={`p-3 md:p-4 rounded-lg border ${
-                                isCurrentUser
-                                  ? 'bg-primary/5 border-primary/20'
-                                  : 'bg-background/50 border-border/50'
-                              }`}
-                            >
-                              {/* 第一行（PC）/ 手机端拆成上下两行：左侧身份，右侧等级卡片 */}
-                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div
-                                    className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold border ${getRankStyle(index)}`}
-                                  >
-                                    {index + 1}
-                                  </div>
-                                  <EmployeeAvatar
-                                    name={member.name}
-                                    src={avatarMap[member.id]}
-                                    size="sm"
-                                  />
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-medium text-sm truncate">{member.name}</p>
-                                      {isCurrentUser && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
-                                          我
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                      累计 {member.total_customers} 位客户
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* 客户等级：PC 靠右；手机端独占一行并靠右 */}
-                                {member.total_levels && (
-                                  <div className="flex md:items-center gap-2 justify-end md:justify-end flex-wrap md:flex-nowrap md:shrink-0">
-                                    <span className="hidden md:inline text-xs text-muted-foreground mr-1">客户等级</span>
-                                    {levelBadges.map(b => (
-                                      <div
-                                        key={b.key}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${b.chip}`}
-                                      >
-                                        <span className="text-base font-bold leading-none">{b.label}</span>
-                                        <span className={`text-lg font-bold leading-none ${b.num}`}>{lv[b.key]}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* 今日新增 A/B/C/D */}
-                              {member.today_new_levels && (
-                                <div className="mt-3 pt-2 border-t border-border/30">
-                                  <p className="text-[11px] text-muted-foreground mb-1.5">今日新增</p>
-                                  <div className="flex gap-2 flex-wrap justify-end md:justify-start">
-                                    <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-medium">
-                                      A +{member.today_new_levels.A}
-                                    </span>
-                                    <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-medium">
-                                      B +{member.today_new_levels.B}
-                                    </span>
-                                    <span className="text-xs px-2 py-1 rounded bg-orange-50 text-orange-600 font-medium">
-                                      C +{member.today_new_levels.C}
-                                    </span>
-                                    <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium">
-                                      D +{member.today_new_levels.D}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground text-sm">
-                        暂无团队成员
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              暂无团队数据
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 最近添加的客户 */}

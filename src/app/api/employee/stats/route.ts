@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getShanghaiDayRange } from '@/lib/date';
 
 // GET /api/employee/stats - 员工个人统计数据
 export async function GET() {
@@ -15,37 +16,39 @@ export async function GET() {
 
     const supabase = getSupabaseClient();
 
-    // 使用数据库服务器时间获取今日日期
-    const { data: nowData } = await supabase.rpc('now' as any).single();
-    const serverNow = nowData ? new Date(nowData as string) : new Date();
-    const todayStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(serverNow);
-    
-    // 本周一
-    const today = new Date(serverNow);
-    const dayOfWeek = today.getDay() || 7; // 周日为7
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - dayOfWeek + 1);
-    const weekStartStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(monday);
+    // 统一使用 Asia/Shanghai 的"今日"时间范围：
+    // [上海当天 00:00, 上海次日 00:00)，转换成 UTC ISO 后与 created_at 比较。
+    const { startISO: todayStartISO, endISO: todayEndISO } = getShanghaiDayRange();
+
+    // 本周一（同样以北京时间为准）
+    const now = new Date();
+    const shanghaiParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(now);
+    const shYear = Number(shanghaiParts.find((p) => p.type === 'year')?.value);
+    const shMonth = Number(shanghaiParts.find((p) => p.type === 'month')?.value);
+    const shDay = Number(shanghaiParts.find((p) => p.type === 'day')?.value);
+    // 构造一个对应"上海当天 00:00 +08:00"的 UTC Date
+    const shanghaiTodayUtc = new Date(Date.UTC(shYear, shMonth - 1, shDay) - 8 * 3600 * 1000);
+    const dow = shanghaiTodayUtc.getUTCDay() || 7;
+    const shanghaiMondayUtc = new Date(shanghaiTodayUtc.getTime() - (dow - 1) * 86400000);
+    const weekStartISO = shanghaiMondayUtc.toISOString();
 
     // 1. 今日新增客户数
     const { count: todayCustomers } = await supabase
       .from('customers')
       .select('*', { count: 'exact', head: true })
       .eq('employee_id', user.userId)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', todayStartISO)
+      .lt('created_at', todayEndISO);
 
     // 2. 今日上传截图数
     const { count: todayImages } = await supabase
       .from('customer_images')
       .select('*', { count: 'exact', head: true })
       .eq('employee_id', user.userId)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', todayStartISO)
+      .lt('created_at', todayEndISO);
 
     // 3. 累计客户数
     const { count: totalCustomers } = await supabase
@@ -58,7 +61,7 @@ export async function GET() {
       .from('customers')
       .select('*', { count: 'exact', head: true })
       .eq('employee_id', user.userId)
-      .gte('created_at', weekStartStr + 'T00:00:00');
+      .gte('created_at', weekStartISO);
 
     // 5. 最近添加的客户（5个，包含等级）
     const { data: recentCustomers } = await supabase
@@ -89,8 +92,8 @@ export async function GET() {
       .from('customers')
       .select('customer_level')
       .eq('employee_id', user.userId)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', todayStartISO)
+      .lt('created_at', todayEndISO);
 
     const todayNewLevels = { A: 0, B: 0, C: 0, D: 0 };
     if (todayLevelStats) {
@@ -107,8 +110,8 @@ export async function GET() {
       .from('customer_level_logs')
       .select('from_level, to_level')
       .eq('employee_id', user.userId)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', todayStartISO)
+      .lt('created_at', todayEndISO);
 
     const transitions = {
       A_to_B: 0, B_to_C: 0, C_to_D: 0,

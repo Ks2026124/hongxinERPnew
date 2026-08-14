@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getShanghaiDayRange } from '@/lib/date';
 
 // 使用服务端 Supabase 客户端（绕过 RLS）
 function getAdminSupabaseClient() {
@@ -57,14 +58,8 @@ export async function GET() {
       return NextResponse.json({ error: '获取团队列表失败' }, { status: 500 });
     }
 
-    // 获取今天的日期范围（使用服务器时区）
-    const today = new Date();
-    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(today);
-    const todayStart = `${todayStr}T00:00:00+08:00`;
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    const todayEnd = `${tomorrowStr}T00:00:00+08:00`;
+    // 统一使用 Asia/Shanghai 计算"今日"边界 [00:00, 次日00:00)
+    const { startISO: todayStart, endISO: todayEnd } = getShanghaiDayRange();
 
     // 先查出各团队当前在职员工 id 集合，统计时只用这些 employee_id；
     // 已离职员工的历史客户保留在 customers 表，但不计入团队当前业绩。

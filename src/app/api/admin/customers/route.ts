@@ -42,12 +42,13 @@ export async function GET(request: NextRequest) {
       query = query.gte('created_at', `${startDate}T00:00:00+08:00`);
     }
     if (endDate) {
-      // 结束日期 +1 天，使用 < 半开区间，确保包含结束日期当天全部时间
-      const end = new Date(`${endDate}T00:00:00+08:00`);
-      end.setDate(end.getDate() + 1);
-      // 格式化为 YYYY-MM-DDTHH:mm:ss+08:00
-      const endDateStr = end.toISOString().split('T')[0];
-      query = query.lt('created_at', `${endDateStr}T00:00:00+08:00`);
+      // 结束日期 +1 天，使用 < 半开区间，确保包含结束日期当天全部时间。
+      // 解析 +08:00 的北京时间 00:00 后加 1 天，避免再用 toISOString().split 取 UTC 日期
+      // 导致"加一天"实际加在 UTC 日上、在凌晨时段错位。
+      const [y, m, d] = endDate.split('-').map(Number);
+      const endUtcMs = Date.UTC(y, m - 1, d + 1) - 8 * 3600 * 1000;
+      const endISO = new Date(endUtcMs).toISOString();
+      query = query.lt('created_at', endISO);
     }
 
     const { data, error } = await query;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getShanghaiDayRange } from '@/lib/date';
 
 // GET /api/employee/all-teams-stats - 获取所有团队及其员工统计
 export async function GET() {
@@ -15,10 +16,8 @@ export async function GET() {
 
     const supabase = getSupabaseClient();
 
-    // 获取服务器时间
-    const { data: nowData } = await supabase.rpc('now' as any).single();
-    const serverNow = nowData ? new Date(nowData as string) : new Date();
-    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(serverNow);
+    // 统一使用 Asia/Shanghai 计算"今日"边界 [00:00, 次日00:00)
+    const { startISO: todayStartISO, endISO: todayEndISO } = getShanghaiDayRange();
 
     // 获取所有活跃团队
     const { data: teams } = await supabase
@@ -71,8 +70,8 @@ export async function GET() {
       .from('customers')
       .select('employee_id, team_id, customer_level')
       .in('employee_id', allEmployeeIds)
-      .gte('created_at', todayStr + 'T00:00:00')
-      .lte('created_at', todayStr + 'T23:59:59');
+      .gte('created_at', todayStartISO)
+      .lt('created_at', todayEndISO);
 
     // 获取每个员工累计客户数（按等级分组，历史空等级默认 A）
     const { data: allCustomers } = await supabase

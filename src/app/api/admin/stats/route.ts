@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { getShanghaiDayRange } from '@/lib/date';
 
 type Levels = { A: number; B: number; C: number; D: number };
 type Transitions = { A_to_B: number; B_to_C: number; C_to_D: number };
@@ -8,26 +9,48 @@ type Transitions = { A_to_B: number; B_to_C: number; C_to_D: number };
 const emptyLevels = (): Levels => ({ A: 0, B: 0, C: 0, D: 0 });
 const emptyTransitions = (): Transitions => ({ A_to_B: 0, B_to_C: 0, C_to_D: 0 });
 
+/**
+ * 把 Asia/Shanghai 时区下的日历日期 YYYY-MM-DD 转成对应的 UTC 即时点
+ * （上海 00:00:00 +08:00 = UTC 前一天 16:00:00）。
+ */
+function shanghaiDateToUtcISO(dateStr: string, plusDays = 0): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const utcMs = Date.UTC(y, (m || 1) - 1, (d || 1) + plusDays) - 8 * 3600 * 1000;
+  return new Date(utcMs).toISOString();
+}
+
 function getDateRange(range: string | null, customStart?: string | null, customEnd?: string | null) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let start = new Date(today);
-  let end = new Date(today);
+  // 始终以 Asia/Shanghai 的"今天"为基准
+  const today = getShanghaiDayRange();
+  const todayStr = today.dateStr;
+  // 昨天 = 上海今天 - 1 天
+  const yesterdayStr = new Date(today.start.getTime() - 24 * 3600 * 1000)
+    .toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+
+  let startDateStr = todayStr;
+  let endDateStr = todayStr;
 
   if (range === 'yesterday') {
-    start.setDate(start.getDate() - 1);
-    end = new Date(start);
+    startDateStr = yesterdayStr;
+    endDateStr = yesterdayStr;
   } else if (range === '7d') {
-    start.setDate(start.getDate() - 6);
+    // 最近 7 天（含今天），按上海日期
+    startDateStr = new Date(today.start.getTime() - 6 * 24 * 3600 * 1000)
+      .toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+  } else if (range === 'week') {
+    // 本周一 ~ 今天（按上海时区）
+    const dow = today.start.getUTCDay() || 7; // 上海周一对应的 UTC 是周日 16:00
+    const mondayUtc = new Date(today.start.getTime() - (dow - 1) * 86400000);
+    startDateStr = mondayUtc.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
   } else if (range === 'custom' && customStart && customEnd) {
-    start = new Date(customStart + 'T00:00:00');
-    end = new Date(customEnd + 'T00:00:00');
+    startDateStr = customStart;
+    endDateStr = customEnd;
   }
 
-  const fmt = (d: Date) => new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(d);
-  return { startStr: fmt(start), endStr: fmt(end) };
+  // 统一返回 UTC ISO 边界：[上海 start 00:00, 上海 end+1 00:00)
+  const startISO = shanghaiDateToUtcISO(startDateStr);
+  const endISO = shanghaiDateToUtcISO(endDateStr, 1);
+  return { startDateStr, endDateStr, startISO, endISO };
 }
 
 // GET /api/admin/stats - 管理员统计（所有团队）
@@ -42,9 +65,7 @@ export async function GET(request: NextRequest) {
     const range = searchParams.get('range') || 'today';
     const customStart = searchParams.get('start');
     const customEnd = searchParams.get('end');
-    const { startStr, endStr } = getDateRange(range, customStart, customEnd);
-    const rangeStart = startStr + 'T00:00:00';
-    const rangeEnd = endStr + 'T23:59:59';
+    const { startDateStr, endDateStr, startISO: rangeStart, endISO: rangeEnd } = getDateRange(range, customStart, customEnd);
 
     const supabase = getSupabaseClient();
 
@@ -54,7 +75,7 @@ export async function GET(request: NextRequest) {
       .order('team_name');
 
     if (!teams || teams.length === 0) {
-      return NextResponse.json({ success: true, data: { teams: [], date_range: { start: startStr, end: endStr } } });
+      return NextResponse.json({ success: true, data: { teams: [], date_range: { start: startDateStr, end: endDateStr } } });
     }
 
     const teamIds = teams.map(t => t.id);
@@ -75,7 +96,7 @@ export async function GET(request: NextRequest) {
       .from('customers')
       .select('employee_id, team_id, customer_level, created_at')
       .gte('created_at', rangeStart)
-      .lte('created_at', rangeEnd);
+      .lt('created_at', rangeEnd);
 
     const { data: allCustomers } = await supabase
       .from('customers')
@@ -85,7 +106,7 @@ export async function GET(request: NextRequest) {
       .from('customer_level_logs')
       .select('employee_id, team_id, from_level, to_level, created_at')
       .gte('created_at', rangeStart)
-      .lte('created_at', rangeEnd);
+      .lt('created_at', rangeEnd);
 
     const teamTodayMap: Record<number, number> = {};
     const teamTotalMap: Record<number, number> = {};
@@ -211,7 +232,7 @@ export async function GET(request: NextRequest) {
       data: {
         teams: teamStats,
         today_transitions: totalTransitions,
-        date_range: { start: startStr, end: endStr },
+        date_range: { start: startDateStr, end: endDateStr },
       },
     });
   } catch (err) {
